@@ -190,7 +190,35 @@ function num(v) {
   return Number.isFinite(n) ? n : null;
 }
 
+function extractCoordsFromLink(link) {
+  if (!link) return { lat: null, lng: null };
+
+  // @lat,lng
+  let match = link.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/);
+  if (match) return { lat: parseFloat(match[1]), lng: parseFloat(match[2]) };
+
+  // q=lat,lng
+  match = link.match(/[?&]q=(-?\d+\.\d+),(-?\d+\.\d+)/);
+  if (match) return { lat: parseFloat(match[1]), lng: parseFloat(match[2]) };
+
+  // lat,lng مباشر داخل النص
+  match = link.match(/(-?\d+\.\d+),\s*(-?\d+\.\d+)/);
+  if (match) return { lat: parseFloat(match[1]), lng: parseFloat(match[2]) };
+
+  return { lat: null, lng: null };
+}
+
 function buildLocation(row) {
+  let lat = parseFloat(row.lat);
+  let lng = parseFloat(row.lng);
+
+  // لو مافي إحداثيات
+  if (!lat || !lng) {
+    const coords = extractCoordsFromLink(row.link);
+    lat = coords.lat;
+    lng = coords.lng;
+  }
+
   return {
     name: String(row.name || "").trim(),
     permit: String(row.permit || "").trim(),
@@ -198,20 +226,11 @@ function buildLocation(row) {
     extra: String(row.extra || "").trim(),
     nationality: String(row.nationality || "").trim(),
     area: String(row.area || "").trim(),
-    owner_building_name: String(row.owner_building_name || "").trim(),
-    tenant_name: String(row.tenant_name || "").trim(),
-    unified_contract_no: String(row.unified_contract_no || "").trim(),
-    request_no: String(row.request_no || "").trim(),
-    pilgrims_total: String(row.pilgrims_total || "").trim(),
-    rooms_count: String(row.rooms_count || "").trim(),
-    classification: String(row.classification || "").trim(),
-    status: String(row.status || "").trim(),
-    ministry_status: String(row.ministry_status || "").trim(),
-    source_sheet: String(row.source_sheet || "").trim(),
-    gprs: String(row.gprs || "").trim(),
-    lat: num(row.lat),
-    lng: num(row.lng),
-    has_coords: String(row.has_coords).toLowerCase() === "true" || !!num(row.lat),
+
+    lat: lat,
+    lng: lng,
+    has_coords: !!lat,
+
     link: String(row.link || "").trim()
   };
 }
