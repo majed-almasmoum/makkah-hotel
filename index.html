@@ -64,7 +64,6 @@ input{width:100%;border:1px solid #d1d5db;border-radius:12px;padding:12px;font-s
 .mobile-cards .meta,.mobile-cards .actions{display:none}
 .mobile-mini-actions{display:flex;gap:6px;margin-top:6px;flex-wrap:wrap}
 .mobile-mini-actions .btn{padding:6px 8px;font-size:11px}
-.distance-badge{display:inline-block;margin-top:4px;border-radius:999px;padding:3px 7px;font-size:10px;font-weight:700;background:rgba(255,255,255,.85);border:1px solid rgba(0,0,0,.08)}
 @media (max-width:900px){
   .app{display:flex;flex-direction:column;height:auto;padding:10px}
   .sidebar{display:none}
@@ -84,7 +83,7 @@ input{width:100%;border:1px solid #d1d5db;border-radius:12px;padding:12px;font-s
   <aside class="sidebar">
     <div class="head">
       <h1>خريطة عماير مكة</h1>
-      <div class="sub">نسخة مربوطة بالشيت الجديد. الاسم أو رقم التصريح فوق الخريطة، فلتر جنسيات، ونسخ للمعلومات والموقع.</div>
+      <div class="sub">إذا فيه إحداثيات تظهر النقطة مباشرة. وإذا ما فيه إحداثيات يظهر السكن في القائمة وتقدر تحدث موقعه من الخريطة بكلمة سر.</div>
     </div>
     <div class="controls">
       <input id="search" placeholder="ابحث بالاسم أو رقم التصريح أو رقم التواصل">
@@ -112,7 +111,7 @@ input{width:100%;border:1px solid #d1d5db;border-radius:12px;padding:12px;font-s
 
   <main class="mapwrap">
     <div class="mapbar">
-      <div class="mapnote">إذا سمحت بالموقع سيظهر مكانك مباشرة. وللتحديث اختر السكن ثم اضغط نقطة جديدة من الخريطة.</div>
+      <div class="mapnote">لتحديث موقع سكن: اضغط "تحديث الموقع" ثم اختر نقطة جديدة من الخريطة.</div>
       <div class="toggle-row">
         <button class="filter-btn all active" data-filter="الكل" data-mobile-filter="1">الكل</button>
         <button class="filter-btn eg" data-filter="مصر" data-mobile-filter="1">مصر</button>
@@ -170,6 +169,8 @@ let markers = [];
 let currentFilter = "الكل";
 let labelMode = "name";
 let userMarker = null;
+let selectedRow = null;
+let editPassword = "";
 
 const group = L.featureGroup().addTo(map);
 
@@ -190,47 +191,29 @@ function num(v) {
   return Number.isFinite(n) ? n : null;
 }
 
-function extractCoordsFromLink(link) {
-  if (!link) return { lat: null, lng: null };
-
-  // @lat,lng
-  let match = link.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/);
-  if (match) return { lat: parseFloat(match[1]), lng: parseFloat(match[2]) };
-
-  // q=lat,lng
-  match = link.match(/[?&]q=(-?\d+\.\d+),(-?\d+\.\d+)/);
-  if (match) return { lat: parseFloat(match[1]), lng: parseFloat(match[2]) };
-
-  // lat,lng مباشر داخل النص
-  match = link.match(/(-?\d+\.\d+),\s*(-?\d+\.\d+)/);
-  if (match) return { lat: parseFloat(match[1]), lng: parseFloat(match[2]) };
-
-  return { lat: null, lng: null };
-}
-
 function buildLocation(row) {
-  let lat = parseFloat(row.lat);
-  let lng = parseFloat(row.lng);
-
-  // لو مافي إحداثيات
-  if (!lat || !lng) {
-    const coords = extractCoordsFromLink(row.link);
-    lat = coords.lat;
-    lng = coords.lng;
-  }
-
   return {
+    _rowNumber: row._rowNumber,
     name: String(row.name || "").trim(),
     permit: String(row.permit || "").trim(),
     phone: String(row.phone || "").trim(),
     extra: String(row.extra || "").trim(),
     nationality: String(row.nationality || "").trim(),
     area: String(row.area || "").trim(),
-
-    lat: lat,
-    lng: lng,
-    has_coords: !!lat,
-
+    owner_building_name: String(row.owner_building_name || "").trim(),
+    tenant_name: String(row.tenant_name || "").trim(),
+    unified_contract_no: String(row.unified_contract_no || "").trim(),
+    request_no: String(row.request_no || "").trim(),
+    pilgrims_total: String(row.pilgrims_total || "").trim(),
+    rooms_count: String(row.rooms_count || "").trim(),
+    classification: String(row.classification || "").trim(),
+    status: String(row.status || "").trim(),
+    ministry_status: String(row.ministry_status || "").trim(),
+    source_sheet: String(row.source_sheet || "").trim(),
+    gprs: String(row.gprs || "").trim(),
+    lat: num(row.lat),
+    lng: num(row.lng),
+    has_coords: !!num(row.lat) && !!num(row.lng),
     link: String(row.link || "").trim()
   };
 }
@@ -271,15 +254,11 @@ function popupHtml(row) {
       ${row.phone ? `رقم التواصل: ${esc(row.phone)}<br>` : ``}
       ${row.area ? `الحي: ${esc(row.area)}<br>` : ``}
       ${row.extra ? `${esc(row.extra)}<br>` : ``}
-      ${row.owner_building_name ? `اسم العمارة: ${esc(row.owner_building_name)}<br>` : ``}
-      ${row.tenant_name ? `المستأجر: ${esc(row.tenant_name)}<br>` : ``}
-      ${row.unified_contract_no ? `العقد الموحد: ${esc(row.unified_contract_no)}<br>` : ``}
-      ${row.request_no ? `رقم الطلب: ${esc(row.request_no)}<br>` : ``}
-      ${row.pilgrims_total ? `عدد الحجاج: ${esc(row.pilgrims_total)}<br>` : ``}
     </div>
     <div class="actions">
       ${row.link ? `<a class="btn" target="_blank" href="${row.link}">فتح الموقع</a>` : ``}
       ${row.has_coords ? `<a class="btn primary" target="_blank" href="https://www.google.com/maps/dir/?api=1&destination=${row.lat},${row.lng}">الملاحة</a>` : ``}
+      <button class="btn" onclick="startEditByRow(${row._rowNumber})">تحديث الموقع</button>
     </div>
   `;
 }
@@ -353,12 +332,14 @@ function makeItem(row) {
       ${row.phone ? `رقم التواصل: ${esc(row.phone)}<br>` : ``}
       ${row.area ? `الحي: ${esc(row.area)}<br>` : ``}
       ${row.extra ? `${esc(row.extra)}<br>` : ``}
+      ${!row.has_coords ? `<b style="color:#b45309">لا توجد إحداثيات بعد</b><br>` : ``}
     </div>
     <div class="actions">
       <button class="btn copy-info">نسخ المعلومات</button>
       ${row.link ? `<button class="btn copy-link">نسخ الموقع</button>` : ``}
       ${row.link ? `<a class="btn" target="_blank" href="${row.link}">فتح</a>` : ``}
       ${row.has_coords ? `<a class="btn primary" target="_blank" href="https://www.google.com/maps/dir/?api=1&destination=${row.lat},${row.lng}">الملاحة</a>` : ``}
+      <button class="btn edit-location">تحديث الموقع</button>
     </div>
   `;
   div.onclick = (e) => {
@@ -378,6 +359,10 @@ function makeItem(row) {
   div.querySelector(".copy-link")?.addEventListener("click", e => {
     e.stopPropagation();
     copyText(row.link, e.target);
+  });
+  div.querySelector(".edit-location")?.addEventListener("click", e => {
+    e.stopPropagation();
+    startEdit(row);
   });
   return div;
 }
@@ -394,6 +379,7 @@ function makeMobileItem(row) {
     <div class="mobile-mini-actions">
       <button class="btn copy-info">نسخ</button>
       ${row.link ? `<button class="btn copy-link">موقع</button>` : ``}
+      <button class="btn edit-location">تحديث</button>
     </div>
   `;
   div.onclick = (e) => {
@@ -413,6 +399,10 @@ function makeMobileItem(row) {
   div.querySelector(".copy-link")?.addEventListener("click", e => {
     e.stopPropagation();
     copyText(row.link, e.target);
+  });
+  div.querySelector(".edit-location")?.addEventListener("click", e => {
+    e.stopPropagation();
+    startEdit(row);
   });
   return div;
 }
@@ -442,9 +432,8 @@ function fitVisible() {
 document.querySelectorAll("[data-filter]").forEach(btn => {
   btn.addEventListener("click", () => {
     currentFilter = btn.dataset.filter;
-    document.querySelectorAll(`[data-filter="${btn.dataset.filter}"]`).forEach(x => x.classList.add("active"));
     document.querySelectorAll("[data-filter]").forEach(x => {
-      if (x.dataset.filter !== currentFilter) x.classList.remove("active");
+      x.classList.toggle("active", x.dataset.filter === currentFilter);
     });
     render();
   });
@@ -495,6 +484,65 @@ locateBtn.onclick = () => {
     userMarker.openPopup();
   });
 };
+
+function startEdit(row) {
+  const pwd = prompt("أدخل كلمة السر");
+  if (!pwd) return;
+  selectedRow = row;
+  editPassword = pwd;
+  alert("الآن اضغط المكان الصحيح في الخريطة لحفظ الإحداثيات");
+}
+
+function startEditByRow(rowNumber) {
+  const row = allRows.find(r => Number(r._rowNumber) === Number(rowNumber));
+  if (row) startEdit(row);
+}
+window.startEditByRow = startEditByRow;
+
+map.on("click", async (e) => {
+  if (!selectedRow) return;
+
+  const lat = e.latlng.lat;
+  const lng = e.latlng.lng;
+
+  try {
+    const res = await fetch(API, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        action: "updateLocation",
+        rowNumber: selectedRow._rowNumber,
+        lat,
+        lng,
+        password: editPassword
+      })
+    });
+
+    const result = await res.json();
+    if (!result.ok) {
+      alert("فشل التحديث: " + (result.error || "خطأ"));
+      selectedRow = null;
+      editPassword = "";
+      return;
+    }
+
+    selectedRow.lat = lat;
+    selectedRow.lng = lng;
+    selectedRow.has_coords = true;
+    selectedRow.link = `https://www.google.com/maps?q=${lat},${lng}`;
+    selectedRow.extra = selectedRow.extra || "";
+
+    selectedRow = null;
+    editPassword = "";
+    render();
+    alert("تم تحديث الموقع بنجاح");
+  } catch (err) {
+    console.error(err);
+    alert("تعذر حفظ التحديث");
+    selectedRow = null;
+    editPassword = "";
+  }
+});
 
 loadData().then(() => fitVisible()).catch(console.error);
 </script>
