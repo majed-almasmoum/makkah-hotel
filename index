@@ -106,7 +106,7 @@
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script>
-    const API = "حط_رابط_الويب_آب_هنا";
+    const API = "https://script.google.com/macros/s/AKfycbry3jVbbcbBVbG2ZYaU2jr-Zp-OG9UtJzZjK0zJSvGArmKxx8WBPFZSQBjERfcDhw-Q/exec";
 
     const map = L.map("map", { zoomControl: true });
     L.tileLayer("https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png", {
