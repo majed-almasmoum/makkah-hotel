@@ -4,547 +4,170 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>خريطة عماير مكة</title>
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+
 <style>
-:root{
-  --bg:#f4f6f8; --card:#fff; --text:#1f2937; --muted:#6b7280; --line:#e5e7eb;
-  --pk-bg:#dcfce7; --pk-border:#86efac; --pk-text:#166534;
-  --ng-bg:#dbeafe; --ng-border:#93c5fd; --ng-text:#1d4ed8;
-  --eg-bg:#fee2e2; --eg-border:#fca5a5; --eg-text:#b91c1c;
+body { margin:0; font-family:Tahoma; }
+#map { height:100vh; }
+
+.panel {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 320px;
+  max-height: 90vh;
+  overflow:auto;
+  background:#fff;
+  border-radius:12px;
+  box-shadow:0 4px 20px rgba(0,0,0,.15);
+  padding:10px;
+  z-index:999;
 }
-*{box-sizing:border-box}
-body{margin:0;font-family:Tahoma,Arial,sans-serif;background:var(--bg);color:var(--text)}
-.app{display:grid;grid-template-columns:360px 1fr;gap:14px;height:100vh;padding:14px}
-.sidebar,.mapwrap{background:var(--card);border:1px solid var(--line);border-radius:18px;overflow:hidden;min-height:0}
-.sidebar{display:flex;flex-direction:column}
-.head{padding:18px 18px 10px;border-bottom:1px solid var(--line)}
-h1{margin:0 0 8px;font-size:24px}
-.sub{color:var(--muted);font-size:13px;line-height:1.7}
-.controls{padding:12px 16px;border-bottom:1px solid var(--line);display:grid;gap:10px}
-input{width:100%;border:1px solid #d1d5db;border-radius:12px;padding:12px;font-size:14px;background:#fff}
-.stats,.toggle-row,.filter-row{display:flex;gap:8px;flex-wrap:wrap}
-.badge{border-radius:999px;padding:6px 10px;font-size:12px;border:1px solid var(--line);background:#fff}
-.badge.pk{background:var(--pk-bg);border-color:var(--pk-border);color:var(--pk-text)}
-.badge.ng{background:var(--ng-bg);border-color:var(--ng-border);color:var(--ng-text)}
-.badge.eg{background:var(--eg-bg);border-color:var(--eg-border);color:var(--eg-text)}
-.toggle,.filter-btn{border:1px solid var(--line);background:#fff;color:var(--text);border-radius:999px;padding:8px 12px;font-size:13px;cursor:pointer}
-.toggle.active{background:#0f766e;color:#fff;border-color:#0f766e}
-.filter-btn.active{color:#111827;box-shadow:0 4px 14px rgba(0,0,0,.06)}
-.filter-btn.all.active{background:#eef2ff;border-color:#c7d2fe}
-.filter-btn.pk.active{background:var(--pk-bg);border-color:var(--pk-border);color:var(--pk-text)}
-.filter-btn.ng.active{background:var(--ng-bg);border-color:var(--ng-border);color:var(--ng-text)}
-.filter-btn.eg.active{background:var(--eg-bg);border-color:var(--eg-border);color:var(--eg-text)}
-.list{overflow:auto;padding:8px}
-.item{border:1px solid var(--line);border-radius:16px;padding:12px;margin:8px;cursor:pointer;background:#fff}
-.item:hover,.item.active{box-shadow:0 8px 18px rgba(15,118,110,.12);background:#f8fffe}
-.item.pk{background:var(--pk-bg);border-color:var(--pk-border)}
-.item.ng{background:var(--ng-bg);border-color:var(--ng-border)}
-.item.eg{background:var(--eg-bg);border-color:var(--eg-border)}
-.title{font-weight:700;margin-bottom:6px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-.pill{display:inline-block;border-radius:999px;padding:4px 8px;font-size:11px;font-weight:700;background:rgba(255,255,255,.85);border:1px solid rgba(0,0,0,.08)}
-.meta{color:#334155;font-size:12px;line-height:1.9}
-.actions{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
-.btn{display:inline-block;text-decoration:none;border-radius:10px;padding:8px 10px;font-size:13px;border:1px solid rgba(0,0,0,.08);color:var(--text);background:rgba(255,255,255,.92);cursor:pointer}
-.btn.primary{background:#0f766e;color:#fff;border-color:#0f766e}
-.mapbar{padding:12px 14px;border-bottom:1px solid var(--line);display:flex;gap:8px;align-items:center;justify-content:space-between;flex-wrap:wrap}
-.mapnote{color:var(--muted);font-size:13px}
-#map{height:calc(100vh - 84px);width:100%}
-.leaflet-popup-content{font-family:Tahoma,Arial,sans-serif;line-height:1.8}
-.popup-title{font-weight:700;margin-bottom:6px}
-.popup-meta{color:#4b5563;font-size:12px}
-.label-marker{background:transparent;border:none}
-.label-wrap{display:flex;align-items:center;gap:6px;transform:translate(-50%,-50%);pointer-events:auto}
-.label-dot{width:14px;height:14px;border:2px solid #fff;border-radius:999px;box-shadow:0 2px 8px rgba(0,0,0,.22);flex:0 0 auto}
-.label-text{background:rgba(255,255,255,.97);border-radius:999px;padding:4px 8px;font-size:12px;font-weight:700;line-height:1.2;white-space:nowrap;box-shadow:0 4px 10px rgba(0,0,0,.08)}
-.mobile-cards{display:none;padding:12px;gap:10px;background:var(--bg)}
-.mobile-cards .grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
-.mobile-cards .item{margin:0;padding:10px 8px;border-radius:14px;min-height:104px}
-.mobile-cards .title{margin:0 0 6px;justify-content:space-between;align-items:flex-start;gap:6px}
-.mobile-cards .title span:first-child{font-size:12px;line-height:1.5}
-.mobile-cards .meta,.mobile-cards .actions{display:none}
-.mobile-mini-actions{display:flex;gap:6px;margin-top:6px;flex-wrap:wrap}
-.mobile-mini-actions .btn{padding:6px 8px;font-size:11px}
-@media (max-width:900px){
-  .app{display:flex;flex-direction:column;height:auto;padding:10px}
-  .sidebar{display:none}
-  .mapwrap{order:1}
-  #map{height:62vh}
-  .mobile-cards{display:grid;order:2}
-  .label-text{font-size:11px;padding:3px 7px}
-  .mobile-cards .grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+
+.item {
+  border:1px solid #eee;
+  border-radius:10px;
+  padding:8px;
+  margin-bottom:8px;
 }
-@media (max-width:420px){
-  .mobile-cards .grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+
+.btn {
+  padding:5px 8px;
+  border:none;
+  border-radius:6px;
+  background:#0f766e;
+  color:#fff;
+  cursor:pointer;
+  font-size:12px;
+  margin-top:5px;
 }
 </style>
 </head>
+
 <body>
-<div class="app">
-  <aside class="sidebar">
-    <div class="head">
-      <h1>خريطة عماير مكة</h1>
-      <div class="sub">هذه الخريطة لتوضيح مواقع مساكن حجاج الشركة بمكة المكرمة الرجاء البحث باسم السكن او رقم التصريح لضمان وصول اسرع او فلترة المساكن بحسب الجنسية والاختيار من القائمة.</div>
-    </div>
-    <div class="controls">
-      <input id="search" placeholder="ابحث بالاسم أو رقم التصريح أو رقم التواصل">
-      <div class="filter-row">
-        <button class="filter-btn all active" data-filter="الكل">الكل</button>
-        <button class="filter-btn eg" data-filter="مصر">مصر</button>
-        <button class="filter-btn ng" data-filter="النيجر">النيجر</button>
-        <button class="filter-btn pk" data-filter="باكستان">باكستان</button>
-      </div>
-      <div class="toggle-row">
-        <button class="toggle active" id="showName">إظهار الاسم</button>
-        <button class="toggle" id="showPermit">إظهار رقم التصريح</button>
-        <button class="toggle" id="fitBtn">ملاءمة الظاهر</button>
-      </div>
-      <div class="stats">
-        <span class="badge">الظاهر الآن: <b id="visibleCount">0</b></span>
-        <span class="badge">على الخريطة: <b id="mapCount">0</b></span>
-        <span class="badge pk">باكستان</span>
-        <span class="badge ng">النيجر</span>
-        <span class="badge eg">مصر</span>
-      </div>
-    </div>
-    <div class="list" id="list"></div>
-  </aside>
 
-  <main class="mapwrap">
-    <div class="mapbar">
-      <div class="mapnote">الرجاء اعطاء صلاحية الموقع لضمان عمل الخريطة بالشكل المطلوب .</div>
-      <div class="toggle-row">
-        <button class="filter-btn all active" data-filter="الكل" data-mobile-filter="1">الكل</button>
-        <button class="filter-btn eg" data-filter="مصر" data-mobile-filter="1">مصر</button>
-        <button class="filter-btn ng" data-filter="النيجر" data-mobile-filter="1">النيجر</button>
-        <button class="filter-btn pk" data-filter="باكستان" data-mobile-filter="1">باكستان</button>
-        <button class="toggle active" id="mobileShowName">الاسم</button>
-        <button class="toggle" id="mobileShowPermit">رقم التصريح</button>
-        <button class="toggle" id="locateBtn">موقعي</button>
-      </div>
-    </div>
-    <div id="map"></div>
-  </main>
+<div id="map"></div>
 
-  <section class="mobile-cards">
-    <input id="searchMobile" placeholder="ابحث بالاسم أو رقم التصريح أو رقم التواصل">
-    <div class="stats">
-      <span class="badge">الظاهر الآن: <b id="visibleCountMobile">0</b></span>
-      <span class="badge">على الخريطة: <b id="mapCountMobile">0</b></span>
-      <span class="badge pk">باكستان</span>
-      <span class="badge ng">النيجر</span>
-      <span class="badge eg">مصر</span>
-    </div>
-    <div id="mobileList" class="grid"></div>
-  </section>
-</div>
+<div class="panel" id="list"></div>
 
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
 <script>
 const API = "https://script.google.com/macros/s/AKfycbyr3jVbbcbBVbG2ZY3aU2vjr-Zp-OG9UtJzZjKOzJSvGARmKxx8WBPfZSQBjERfcDhw-Q/exec";
 
-const map = L.map("map", { zoomControl: true }).setView([21.41, 39.87], 12);
-L.tileLayer("https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png", {
-  maxZoom: 19,
-  attribution: "&copy; OpenStreetMap"
-}).addTo(map);
+const map = L.map("map").setView([21.41,39.87],12);
 
-const listEl = document.getElementById("list");
-const mobileListEl = document.getElementById("mobileList");
-const searchEl = document.getElementById("search");
-const searchMobileEl = document.getElementById("searchMobile");
-const visibleCountEl = document.getElementById("visibleCount");
-const visibleCountMobileEl = document.getElementById("visibleCountMobile");
-const mapCountEl = document.getElementById("mapCount");
-const mapCountMobileEl = document.getElementById("mapCountMobile");
-const showNameBtn = document.getElementById("showName");
-const showPermitBtn = document.getElementById("showPermit");
-const mobileShowNameBtn = document.getElementById("mobileShowName");
-const mobileShowPermitBtn = document.getElementById("mobileShowPermit");
-const fitBtn = document.getElementById("fitBtn");
-const locateBtn = document.getElementById("locateBtn");
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
 
-let allRows = [];
-let visibleRows = [];
-let markers = [];
-let currentFilter = "الكل";
-let labelMode = "name";
-let userMarker = null;
 let selectedRow = null;
-let editPassword = "";
+let password = "";
 
-const group = L.featureGroup().addTo(map);
+function extractCoordsFromLink(link){
+  if(!link) return {lat:null,lng:null};
 
-function themeForNationality(n) {
-  if (n === "باكستان") return { cls:"pk", dot:"#22c55e" };
-  if (n === "النيجر") return { cls:"ng", dot:"#60a5fa" };
-  return { cls:"eg", dot:"#f87171" };
+  let m;
+
+  // ⭐ الأهم (الرابط حقك)
+  m = link.match(/!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/);
+  if(m) return {lat:parseFloat(m[1]),lng:parseFloat(m[2])};
+
+  m = link.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/);
+  if(m) return {lat:parseFloat(m[1]),lng:parseFloat(m[2])};
+
+  m = link.match(/[?&]q=(-?\d+\.\d+),(-?\d+\.\d+)/);
+  if(m) return {lat:parseFloat(m[1]),lng:parseFloat(m[2])};
+
+  m = link.match(/(-?\d+\.\d+),\s*(-?\d+\.\d+)/);
+  if(m) return {lat:parseFloat(m[1]),lng:parseFloat(m[2])};
+
+  return {lat:null,lng:null};
 }
 
-function esc(v) {
-  return String(v ?? "").replace(/[&<>"']/g, s => ({
-    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
-  }[s]));
-}
+function build(row){
+  let lat = parseFloat(row.lat);
+  let lng = parseFloat(row.lng);
 
-function num(v) {
-  const n = Number(v);
-  return Number.isFinite(n) ? n : null;
-}
-
-function buildLocation(row) {
-  return {
-    _rowNumber: row._rowNumber,
-    name: String(row.name || "").trim(),
-    permit: String(row.permit || "").trim(),
-    phone: String(row.phone || "").trim(),
-    extra: String(row.extra || "").trim(),
-    nationality: String(row.nationality || "").trim(),
-    area: String(row.area || "").trim(),
-    owner_building_name: String(row.owner_building_name || "").trim(),
-    tenant_name: String(row.tenant_name || "").trim(),
-    unified_contract_no: String(row.unified_contract_no || "").trim(),
-    request_no: String(row.request_no || "").trim(),
-    pilgrims_total: String(row.pilgrims_total || "").trim(),
-    rooms_count: String(row.rooms_count || "").trim(),
-    classification: String(row.classification || "").trim(),
-    status: String(row.status || "").trim(),
-    ministry_status: String(row.ministry_status || "").trim(),
-    source_sheet: String(row.source_sheet || "").trim(),
-    gprs: String(row.gprs || "").trim(),
-    lat: num(row.lat),
-    lng: num(row.lng),
-    has_coords: !!num(row.lat) && !!num(row.lng),
-    link: String(row.link || "").trim()
-  };
-}
-
-async function loadData() {
-  const res = await fetch(API + "?action=list");
-  const json = await res.json();
-  allRows = json.map(buildLocation);
-  render();
-}
-
-function currentLabel(row) {
-  return labelMode === "permit" ? (row.permit || row.name) : row.name;
-}
-
-function markerIcon(row) {
-  const t = themeForNationality(row.nationality);
-  return L.divIcon({
-    className: "label-marker",
-    html: `
-      <div class="label-wrap">
-        <span class="label-dot" style="background:${t.dot}"></span>
-        <span class="label-text">${esc(currentLabel(row))}</span>
-      </div>
-    `,
-    iconSize: [140, 24],
-    iconAnchor: [18, 12],
-    popupAnchor: [0, -10]
-  });
-}
-
-function popupHtml(row) {
-  return `
-    <div class="popup-title">${esc(row.name)}</div>
-    <div class="popup-meta">
-      الجنسية: ${esc(row.nationality)}<br>
-      رقم التصريح: ${esc(row.permit)}<br>
-      ${row.phone ? `رقم التواصل: ${esc(row.phone)}<br>` : ``}
-      ${row.area ? `الحي: ${esc(row.area)}<br>` : ``}
-      ${row.extra ? `${esc(row.extra)}<br>` : ``}
-    </div>
-    <div class="actions">
-      ${row.link ? `<a class="btn" target="_blank" href="${row.link}">فتح الموقع</a>` : ``}
-      ${row.has_coords ? `<a class="btn primary" target="_blank" href="https://www.google.com/maps/dir/?api=1&destination=${row.lat},${row.lng}">الملاحة</a>` : ``}
-      <button class="btn" onclick="startEditByRow(${row._rowNumber})">تحديث الموقع</button>
-    </div>
-  `;
-}
-
-function copyText(text, btn) {
-  navigator.clipboard.writeText(text).then(() => {
-    if (!btn) return;
-    const old = btn.textContent;
-    btn.textContent = "تم";
-    setTimeout(() => btn.textContent = old, 900);
-  });
-}
-
-function rowInfoText(row) {
-  return [
-    row.name,
-    `الجنسية: ${row.nationality}`,
-    row.permit ? `رقم التصريح: ${row.permit}` : "",
-    row.phone ? `رقم التواصل: ${row.phone}` : "",
-    row.area ? `الحي: ${row.area}` : "",
-    row.extra ? row.extra : "",
-    row.owner_building_name ? `اسم العمارة: ${row.owner_building_name}` : "",
-    row.tenant_name ? `المستأجر: ${row.tenant_name}` : "",
-    row.unified_contract_no ? `العقد الموحد: ${row.unified_contract_no}` : "",
-    row.request_no ? `رقم الطلب: ${row.request_no}` : "",
-    row.pilgrims_total ? `عدد الحجاج: ${row.pilgrims_total}` : ""
-  ].filter(Boolean).join("\n");
-}
-
-function filterRows() {
-  const q = (searchEl.value || searchMobileEl.value || "").trim().toLowerCase();
-  return allRows.filter(r => {
-    const filterOk = currentFilter === "الكل" || r.nationality === currentFilter;
-    const text = [
-      r.name, r.permit, r.phone, r.extra, r.area, r.owner_building_name,
-      r.tenant_name, r.unified_contract_no, r.request_no
-    ].join(" ").toLowerCase();
-    return filterOk && (!q || text.includes(q));
-  });
-}
-
-function clearMarkers() {
-  markers.forEach(m => group.removeLayer(m));
-  markers = [];
-}
-
-function renderMarkers(rows) {
-  clearMarkers();
-  const coordsRows = rows.filter(r => r.has_coords && r.lat && r.lng);
-  coordsRows.forEach(row => {
-    const m = L.marker([row.lat, row.lng], { icon: markerIcon(row) }).addTo(group);
-    m.bindPopup(popupHtml(row));
-    m.row = row;
-    markers.push(m);
-  });
-  mapCountEl.textContent = coordsRows.length;
-  mapCountMobileEl.textContent = coordsRows.length;
-}
-
-function makeItem(row) {
-  const t = themeForNationality(row.nationality);
-  const div = document.createElement("div");
-  div.className = `item ${t.cls}`;
-  div.innerHTML = `
-    <div class="title">
-      <span>${esc(row.name)}</span>
-      <span class="pill">${esc(row.nationality)}</span>
-    </div>
-    <div class="meta">
-      ${row.permit ? `رقم التصريح: ${esc(row.permit)}<br>` : ``}
-      ${row.phone ? `رقم التواصل: ${esc(row.phone)}<br>` : ``}
-      ${row.area ? `الحي: ${esc(row.area)}<br>` : ``}
-      ${row.extra ? `${esc(row.extra)}<br>` : ``}
-      ${!row.has_coords ? `<b style="color:#b45309">لا توجد إحداثيات بعد</b><br>` : ``}
-    </div>
-    <div class="actions">
-      <button class="btn copy-info">نسخ المعلومات</button>
-      ${row.link ? `<button class="btn copy-link">نسخ الموقع</button>` : ``}
-      ${row.link ? `<a class="btn" target="_blank" href="${row.link}">فتح</a>` : ``}
-      ${row.has_coords ? `<a class="btn primary" target="_blank" href="https://www.google.com/maps/dir/?api=1&destination=${row.lat},${row.lng}">الملاحة</a>` : ``}
-      <button class="btn edit-location">تحديث الموقع</button>
-    </div>
-  `;
-  div.onclick = (e) => {
-    if (e.target.closest("button,a")) return;
-    if (row.has_coords) {
-      map.setView([row.lat, row.lng], 17);
-      const marker = markers.find(m => m.row === row);
-      if (marker) marker.openPopup();
-    } else if (row.link) {
-      window.open(row.link, "_blank");
-    }
-  };
-  div.querySelector(".copy-info")?.addEventListener("click", e => {
-    e.stopPropagation();
-    copyText(rowInfoText(row), e.target);
-  });
-  div.querySelector(".copy-link")?.addEventListener("click", e => {
-    e.stopPropagation();
-    copyText(row.link, e.target);
-  });
-  div.querySelector(".edit-location")?.addEventListener("click", e => {
-    e.stopPropagation();
-    startEdit(row);
-  });
-  return div;
-}
-
-function makeMobileItem(row) {
-  const t = themeForNationality(row.nationality);
-  const div = document.createElement("div");
-  div.className = `item ${t.cls}`;
-  div.innerHTML = `
-    <div class="title">
-      <span>${esc(row.name)}</span>
-      <span class="pill">${esc(row.nationality)}</span>
-    </div>
-    <div class="mobile-mini-actions">
-      <button class="btn copy-info">نسخ</button>
-      ${row.link ? `<button class="btn copy-link">موقع</button>` : ``}
-      <button class="btn edit-location">تحديث</button>
-    </div>
-  `;
-  div.onclick = (e) => {
-    if (e.target.closest("button,a")) return;
-    if (row.has_coords) {
-      map.setView([row.lat, row.lng], 17);
-      const marker = markers.find(m => m.row === row);
-      if (marker) marker.openPopup();
-    } else if (row.link) {
-      window.open(row.link, "_blank");
-    }
-  };
-  div.querySelector(".copy-info")?.addEventListener("click", e => {
-    e.stopPropagation();
-    copyText(rowInfoText(row), e.target);
-  });
-  div.querySelector(".copy-link")?.addEventListener("click", e => {
-    e.stopPropagation();
-    copyText(row.link, e.target);
-  });
-  div.querySelector(".edit-location")?.addEventListener("click", e => {
-    e.stopPropagation();
-    startEdit(row);
-  });
-  return div;
-}
-
-function render() {
-  visibleRows = filterRows();
-  renderMarkers(visibleRows);
-
-  listEl.innerHTML = "";
-  mobileListEl.innerHTML = "";
-  visibleRows.forEach(r => {
-    listEl.appendChild(makeItem(r));
-    mobileListEl.appendChild(makeMobileItem(r));
-  });
-
-  visibleCountEl.textContent = visibleRows.length;
-  visibleCountMobileEl.textContent = visibleRows.length;
-}
-
-function fitVisible() {
-  const points = visibleRows.filter(r => r.has_coords && r.lat && r.lng);
-  if (!points.length) return;
-  const bounds = L.latLngBounds(points.map(r => [r.lat, r.lng]));
-  map.fitBounds(bounds.pad(0.15));
-}
-
-document.querySelectorAll("[data-filter]").forEach(btn => {
-  btn.addEventListener("click", () => {
-    currentFilter = btn.dataset.filter;
-    document.querySelectorAll("[data-filter]").forEach(x => {
-      x.classList.toggle("active", x.dataset.filter === currentFilter);
-    });
-    render();
-  });
-});
-
-showNameBtn.onclick = mobileShowNameBtn.onclick = () => {
-  labelMode = "name";
-  showNameBtn.classList.add("active");
-  mobileShowNameBtn.classList.add("active");
-  showPermitBtn.classList.remove("active");
-  mobileShowPermitBtn.classList.remove("active");
-  renderMarkers(visibleRows);
-};
-
-showPermitBtn.onclick = mobileShowPermitBtn.onclick = () => {
-  labelMode = "permit";
-  showPermitBtn.classList.add("active");
-  mobileShowPermitBtn.classList.add("active");
-  showNameBtn.classList.remove("active");
-  mobileShowNameBtn.classList.remove("active");
-  renderMarkers(visibleRows);
-};
-
-fitBtn.onclick = fitVisible;
-
-searchEl.addEventListener("input", () => {
-  searchMobileEl.value = searchEl.value;
-  render();
-});
-searchMobileEl.addEventListener("input", () => {
-  searchEl.value = searchMobileEl.value;
-  render();
-});
-
-locateBtn.onclick = () => {
-  if (!navigator.geolocation) return;
-  navigator.geolocation.getCurrentPosition(pos => {
-    const lat = pos.coords.latitude;
-    const lng = pos.coords.longitude;
-    if (!userMarker) {
-      userMarker = L.circleMarker([lat, lng], {
-        radius: 8, color: "#fff", weight: 3, fillColor: "#2563eb", fillOpacity: 1
-      }).addTo(map).bindPopup("موقعك الحالي");
-    } else {
-      userMarker.setLatLng([lat, lng]);
-    }
-    map.setView([lat, lng], 15);
-    userMarker.openPopup();
-  });
-};
-
-function startEdit(row) {
-  const pwd = prompt("أدخل كلمة السر");
-  if (!pwd) return;
-  selectedRow = row;
-  editPassword = pwd;
-  alert("الآن اضغط المكان الصحيح في الخريطة لحفظ الإحداثيات");
-}
-
-function startEditByRow(rowNumber) {
-  const row = allRows.find(r => Number(r._rowNumber) === Number(rowNumber));
-  if (row) startEdit(row);
-}
-window.startEditByRow = startEditByRow;
-
-map.on("click", async (e) => {
-  if (!selectedRow) return;
-
-  const lat = e.latlng.lat;
-  const lng = e.latlng.lng;
-
-  try {
-    const res = await fetch(API, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        action: "updateLocation",
-        rowNumber: selectedRow._rowNumber,
-        lat,
-        lng,
-        password: editPassword
-      })
-    });
-
-    const result = await res.json();
-    if (!result.ok) {
-      alert("فشل التحديث: " + (result.error || "خطأ"));
-      selectedRow = null;
-      editPassword = "";
-      return;
-    }
-
-    selectedRow.lat = lat;
-    selectedRow.lng = lng;
-    selectedRow.has_coords = true;
-    selectedRow.link = `https://www.google.com/maps?q=${lat},${lng}`;
-    selectedRow.extra = selectedRow.extra || "";
-
-    selectedRow = null;
-    editPassword = "";
-    render();
-    alert("تم تحديث الموقع بنجاح");
-  } catch (err) {
-    console.error(err);
-    alert("تعذر حفظ التحديث");
-    selectedRow = null;
-    editPassword = "";
+  if(!lat || !lng){
+    let c = extractCoordsFromLink(row.link);
+    lat = c.lat;
+    lng = c.lng;
   }
+
+  return {
+    ...row,
+    lat,
+    lng,
+    has: !!lat
+  };
+}
+
+async function load(){
+  let res = await fetch(API + "?action=list");
+  let data = await res.json();
+
+  let list = document.getElementById("list");
+  list.innerHTML = "";
+
+  data.map(build).forEach(r=>{
+
+    // رسم النقطة
+    if(r.has){
+      let m = L.marker([r.lat,r.lng]).addTo(map);
+      m.bindPopup(r.name);
+    }
+
+    // القائمة
+    let div = document.createElement("div");
+    div.className = "item";
+
+    div.innerHTML = `
+      <b>${r.name || ""}</b><br>
+      ${r.permit || ""}<br>
+      ${r.has ? "📍 موجود" : "❌ بدون موقع"}<br>
+
+      <button class="btn open">فتح</button>
+      <button class="btn edit">تحديث</button>
+    `;
+
+    div.querySelector(".open").onclick = ()=>{
+      if(r.link) window.open(r.link);
+    };
+
+    div.querySelector(".edit").onclick = ()=>{
+      selectedRow = r;
+      password = prompt("كلمة السر");
+      alert("اضغط الموقع في الخريطة");
+    };
+
+    list.appendChild(div);
+  });
+}
+
+map.on("click", async (e)=>{
+  if(!selectedRow) return;
+
+  let lat = e.latlng.lat;
+  let lng = e.latlng.lng;
+
+  await fetch(API,{
+    method:"POST",
+    body: JSON.stringify({
+      action:"updateLocation",
+      rowNumber:selectedRow._rowNumber,
+      lat,
+      lng,
+      password
+    })
+  });
+
+  alert("تم الحفظ");
+  selectedRow = null;
+  load();
 });
 
-loadData().then(() => fitVisible()).catch(console.error);
+load();
 </script>
+
 </body>
 </html>
