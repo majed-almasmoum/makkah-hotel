@@ -1,455 +1,565 @@
 <!doctype html>
 <html lang="ar" dir="rtl">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>خريطة عماير مكة</title>
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
-<style>
-:root{
-  --bg:#f4f6f8; --card:#fff; --text:#1f2937; --muted:#6b7280; --line:#e5e7eb;
-  --pk-bg:#dcfce7; --pk-border:#86efac; --pk-text:#166534;
-  --ng-bg:#dbeafe; --ng-border:#93c5fd; --ng-text:#1d4ed8;
-  --eg-bg:#fee2e2; --eg-border:#fca5a5; --eg-text:#b91c1c;
-}
-*{box-sizing:border-box}
-body{margin:0;font-family:Tahoma,Arial,sans-serif;background:var(--bg);color:var(--text)}
-.app{display:grid;grid-template-columns:360px 1fr;gap:14px;height:100vh;padding:14px}
-.sidebar,.mapwrap{background:var(--card);border:1px solid var(--line);border-radius:18px;overflow:hidden;min-height:0}
-.sidebar{display:flex;flex-direction:column}
-.head{padding:18px 18px 10px;border-bottom:1px solid var(--line)}
-h1{margin:0 0 8px;font-size:24px}
-.sub{color:var(--muted);font-size:13px;line-height:1.7}
-.controls{padding:12px 16px;border-bottom:1px solid var(--line);display:grid;gap:10px}
-input{width:100%;border:1px solid #d1d5db;border-radius:12px;padding:12px;font-size:14px;background:#fff}
-.stats,.toggle-row,.filter-row{display:flex;gap:8px;flex-wrap:wrap}
-.badge{border-radius:999px;padding:6px 10px;font-size:12px;border:1px solid var(--line);background:#fff}
-.badge.pk{background:var(--pk-bg);border-color:var(--pk-border);color:var(--pk-text)}
-.badge.ng{background:var(--ng-bg);border-color:var(--ng-border);color:var(--ng-text)}
-.badge.eg{background:var(--eg-bg);border-color:var(--eg-border);color:var(--eg-text)}
-.toggle,.filter-btn{border:1px solid var(--line);background:#fff;color:var(--text);border-radius:999px;padding:8px 12px;font-size:13px;cursor:pointer}
-.toggle.active{background:#0f766e;color:#fff;border-color:#0f766e}
-.filter-btn.active{color:#111827;box-shadow:0 4px 14px rgba(0,0,0,.06)}
-.filter-btn.all.active{background:#eef2ff;border-color:#c7d2fe}
-.filter-btn.pk.active{background:var(--pk-bg);border-color:var(--pk-border);color:var(--pk-text)}
-.filter-btn.ng.active{background:var(--ng-bg);border-color:var(--ng-border);color:var(--ng-text)}
-.filter-btn.eg.active{background:var(--eg-bg);border-color:var(--eg-border);color:var(--eg-text)}
-.list{overflow:auto;padding:8px}
-.item{border:1px solid var(--line);border-radius:16px;padding:12px;margin:8px;cursor:pointer;background:#fff}
-.item:hover,.item.active{box-shadow:0 8px 18px rgba(15,118,110,.12);background:#f8fffe}
-.item.pk{background:var(--pk-bg);border-color:var(--pk-border)}
-.item.ng{background:var(--ng-bg);border-color:var(--ng-border)}
-.item.eg{background:var(--eg-bg);border-color:var(--eg-border)}
-.title{font-weight:700;margin-bottom:6px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-.pill{display:inline-block;border-radius:999px;padding:4px 8px;font-size:11px;font-weight:700;background:rgba(255,255,255,.85);border:1px solid rgba(0,0,0,.08)}
-.meta{color:#334155;font-size:12px;line-height:1.9}
-.actions{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
-.btn{display:inline-block;text-decoration:none;border-radius:10px;padding:8px 10px;font-size:13px;border:1px solid rgba(0,0,0,.08);color:var(--text);background:rgba(255,255,255,.92);cursor:pointer}
-.btn.primary{background:#0f766e;color:#fff;border-color:#0f766e}
-.mapbar{padding:12px 14px;border-bottom:1px solid var(--line);display:flex;gap:8px;align-items:center;justify-content:space-between;flex-wrap:wrap}
-.mapnote{color:var(--muted);font-size:13px}
-#map{height:calc(100vh - 84px);width:100%}
-.leaflet-popup-content{font-family:Tahoma,Arial,sans-serif;line-height:1.8}
-.popup-title{font-weight:700;margin-bottom:6px}
-.popup-meta{color:#4b5563;font-size:12px}
-.label-marker{background:transparent;border:none}
-.label-wrap{display:flex;align-items:center;gap:6px;transform:translate(-50%,-50%);pointer-events:auto}
-.label-dot{width:14px;height:14px;border:2px solid #fff;border-radius:999px;box-shadow:0 2px 8px rgba(0,0,0,.22);flex:0 0 auto}
-.label-text{background:rgba(255,255,255,.97);border-radius:999px;padding:4px 8px;font-size:12px;font-weight:700;line-height:1.2;white-space:nowrap;box-shadow:0 4px 10px rgba(0,0,0,.08)}
-.mobile-cards{display:none;padding:12px;gap:10px;background:var(--bg)}
-.mobile-cards .grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
-.mobile-cards .item{margin:0;padding:10px 8px;border-radius:14px;min-height:104px}
-.mobile-cards .title{margin:0 0 6px;justify-content:space-between;align-items:flex-start;gap:6px}
-.mobile-cards .title span:first-child{font-size:12px;line-height:1.5}
-.mobile-cards .meta,.mobile-cards .actions{display:none}
-.mobile-mini-actions{display:flex;gap:6px;margin-top:6px;flex-wrap:wrap}
-.mobile-mini-actions .btn{padding:6px 8px;font-size:11px}
-.distance-badge{display:inline-block;margin-top:4px;border-radius:999px;padding:3px 7px;font-size:10px;font-weight:700;background:rgba(255,255,255,.85);border:1px solid rgba(0,0,0,.08)}
-@media (max-width:900px){
-  .app{display:flex;flex-direction:column;height:auto;padding:10px}
-  .sidebar{display:none}
-  .mapwrap{order:1}
-  #map{height:62vh}
-  .mobile-cards{display:grid;order:2}
-  .label-text{font-size:11px;padding:3px 7px}
-  .mobile-cards .grid{grid-template-columns:repeat(3,minmax(0,1fr))}
-}
-@media (max-width:420px){
-  .mobile-cards .grid{grid-template-columns:repeat(2,minmax(0,1fr))}
-}
-</style>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>خريطة عماير مكة</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <style>
+    :root{
+      --bg:#f4f6f8; --card:#fff; --text:#1f2937; --muted:#6b7280; --line:#e5e7eb; --main:#0f766e;
+    }
+    *{box-sizing:border-box}
+    body{margin:0;font-family:Tahoma,Arial,sans-serif;background:var(--bg);color:var(--text)}
+    .app{display:grid;grid-template-columns:360px 1fr;gap:14px;height:100vh;padding:14px}
+    .sidebar,.mapwrap{background:var(--card);border:1px solid var(--line);border-radius:18px;overflow:hidden;min-height:0}
+    .sidebar{display:flex;flex-direction:column;min-height:0}
+    .head{padding:18px 18px 10px;border-bottom:1px solid var(--line)}
+    h1{margin:0 0 8px;font-size:24px}
+    .sub{color:var(--muted);font-size:13px;line-height:1.7}
+    .controls{padding:12px 16px;border-bottom:1px solid var(--line);display:grid;gap:10px}
+    input,select{width:100%;border:1px solid #d1d5db;border-radius:12px;padding:12px;font-size:14px;background:#fff}
+    .row,.stats{display:flex;gap:8px;flex-wrap:wrap}
+    .badge,.toggle{
+      border:1px solid var(--line);background:#fff;color:var(--text);
+      border-radius:999px;padding:8px 12px;font-size:13px;cursor:pointer
+    }
+    .badge{cursor:default}
+    .toggle.active{background:var(--main);color:#fff;border-color:var(--main)}
+    .list{overflow:auto;padding:8px}
+    .card{border:1px solid var(--line);border-radius:16px;padding:12px;margin:8px;background:#fff;cursor:pointer}
+    .card:hover,.card.active{box-shadow:0 8px 18px rgba(15,118,110,.12)}
+    .title{font-weight:700;margin-bottom:6px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+    .pill{display:inline-block;border-radius:999px;padding:4px 8px;font-size:11px;font-weight:700;background:rgba(255,255,255,.85);border:1px solid rgba(0,0,0,.08)}
+    .meta{color:#334155;font-size:12px;line-height:1.9}
+    .actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+    .btn{display:inline-block;text-decoration:none;border-radius:10px;padding:8px 10px;font-size:13px;border:1px solid rgba(0,0,0,.08);color:var(--text);background:rgba(255,255,255,.92);cursor:pointer}
+    .btn.primary{background:#0f766e;color:#fff;border-color:#0f766e}
+    .mapbar{padding:12px 14px;border-bottom:1px solid var(--line);display:flex;gap:8px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+    .mapnote,.status{color:var(--muted);font-size:12px}
+    #map{height:calc(100vh - 84px);width:100%}
+    .leaflet-popup-content{font-family:Tahoma,Arial,sans-serif;line-height:1.8}
+    .label-marker{background:transparent;border:none}
+    .label-wrap{display:flex;align-items:center;gap:6px;transform:translate(-50%,-50%);pointer-events:auto}
+    .label-dot{width:14px;height:14px;border:2px solid #fff;border-radius:999px;box-shadow:0 2px 8px rgba(0,0,0,.22);flex:0 0 auto;background:#0f766e}
+    .label-text{background:rgba(255,255,255,.97);border-radius:999px;padding:4px 8px;font-size:12px;font-weight:700;line-height:1.2;white-space:nowrap;box-shadow:0 4px 10px rgba(0,0,0,.08)}
+    .mobile{display:none;padding:12px;gap:10px;background:var(--bg)}
+    .mobile .grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+    .mobile .card{margin:0;padding:6px;border-radius:10px;min-height:66px}
+    .mobile .title{margin:0 0 3px;align-items:flex-start;gap:5px}
+    .mobile .title span:first-child{font-size:10px;line-height:1.15}
+    .mobile .meta,.mobile .actions{display:none}
+    .mobile-mini-actions{display:flex;gap:4px;flex-wrap:wrap;margin-top:5px}
+    .mobile-mini-actions .btn{padding:3px 5px;font-size:8px;border-radius:7px}
+    @media (max-width:900px){
+      .app{display:flex;flex-direction:column;height:auto;padding:10px}
+      .sidebar{display:none}
+      .mapwrap{order:1}
+      #map{height:62vh}
+      .mobile{display:grid;order:2}
+      .mapbar .right-tools{display:none}
+      .label-text{font-size:11px;padding:3px 7px}
+    }
+  </style>
 </head>
 <body>
-<div class="app">
-  <aside class="sidebar">
-    <div class="head">
-      <h1>خريطة عماير مكة</h1>
-      <div class="sub">هذه النسخة النهائية: الاسم أو رقم التصريح فوق الخريطة، فلتر جنسيات، نسخ المعلومات والموقع، وكروت للجوال.</div>
-    </div>
-    <div class="controls">
-      <input id="search" placeholder="ابحث بالاسم أو رقم التصريح أو رقم التواصل">
-      <div class="filter-row">
-        <button class="filter-btn all active" data-filter="الكل">الكل</button>
-        <button class="filter-btn eg" data-filter="مصر">مصر</button>
-        <button class="filter-btn ng" data-filter="النيجر">النيجر</button>
-        <button class="filter-btn pk" data-filter="باكستان">باكستان</button>
+  <div class="app">
+    <aside class="sidebar">
+      <div class="head">
+        <h1>خريطة عماير مكة</h1>
+        <div class="sub">مرتبطة بـ Google Sheet. إذا كانت الإحداثيات موجودة تستخدمها مباشرة، وإذا فاضية يحاول النظام استخراجها من الرابط.</div>
       </div>
-      <div class="toggle-row">
-        <button class="toggle active" id="showName">إظهار الاسم</button>
-        <button class="toggle" id="showPermit">إظهار رقم التصريح</button>
-        <button class="toggle" id="fitBtn">ملاءمة الظاهر</button>
+      <div class="controls">
+        <input id="search" placeholder="ابحث برقم العمارة أو المالك أو المستأجر أو مركز الضيافة">
+        <select id="areaFilter"><option value="الكل">كل المناطق</option></select>
+        <div class="row">
+          <button class="toggle active" id="showBuilding">رقم العمارة</button>
+          <button class="toggle" id="showHospitality">رقم الضيافة</button>
+          <button class="toggle" id="fitBtn">ملاءمة الظاهر</button>
+        </div>
+        <div class="stats">
+          <span class="badge">الظاهر الآن: <b id="visibleCount">0</b></span>
+        </div>
+        <div class="status" id="statusText">جارِ تحميل البيانات...</div>
       </div>
-      <div class="stats">
-        <span class="badge">الظاهر الآن: <b id="visibleCount">0</b></span>
-        <span class="badge">على الخريطة: <b>208</b></span>
-        <span class="badge pk">باكستان</span>
-        <span class="badge ng">النيجر</span>
-        <span class="badge eg">مصر</span>
+      <div class="list" id="list"></div>
+    </aside>
+
+    <main class="mapwrap">
+      <div class="mapbar">
+        <div class="mapnote">اضغط "تحديث الموقع" ثم اختر نقطة جديدة من الخريطة لحفظها في الشيت.</div>
+        <div class="right-tools row">
+          <button class="toggle active" id="mobileShowBuilding">رقم العمارة</button>
+          <button class="toggle" id="mobileShowHospitality">رقم الضيافة</button>
+          <button class="toggle" id="locateBtn">موقعي</button>
+        </div>
       </div>
-    </div>
-    <div class="list" id="list"></div>
-  </aside>
+      <div id="map"></div>
+    </main>
 
-  <main class="mapwrap">
-    <div class="mapbar">
-      <div class="mapnote">خريطة ملونة وواضحة. إذا سمحت بالموقع سيظهر مكانك مباشرة على الخريطة.</div>
-      <div class="toggle-row">
-        <button class="filter-btn all active" data-filter="الكل" data-mobile-filter="1">الكل</button>
-        <button class="filter-btn eg" data-filter="مصر" data-mobile-filter="1">مصر</button>
-        <button class="filter-btn ng" data-filter="النيجر" data-mobile-filter="1">النيجر</button>
-        <button class="filter-btn pk" data-filter="باكستان" data-mobile-filter="1">باكستان</button>
-        <button class="toggle active" id="mobileShowName">الاسم</button>
-        <button class="toggle" id="mobileShowPermit">رقم التصريح</button>
-        <button class="toggle" id="locateBtn">موقعي</button>
-      </div>
-    </div>
-    <div id="map"></div>
-  </main>
+    <section class="mobile">
+      <input id="searchMobile" placeholder="ابحث برقم العمارة أو المالك أو المستأجر أو مركز الضيافة">
+      <select id="areaFilterMobile"><option value="الكل">كل المناطق</option></select>
+      <div class="grid" id="mobileGrid"></div>
+    </section>
+  </div>
 
-  <section class="mobile-cards">
-    <input id="searchMobile" placeholder="ابحث بالاسم أو رقم التصريح أو رقم التواصل">
-    <div class="stats">
-      <span class="badge">الظاهر الآن: <b id="visibleCountMobile">0</b></span>
-      <span class="badge">على الخريطة: <b>208</b></span>
-      <span class="badge pk">باكستان</span>
-      <span class="badge ng">النيجر</span>
-      <span class="badge eg">مصر</span>
-    </div>
-    <div id="mobileList" class="grid"></div>
-  </section>
-</div>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script>
+    const API = "حط_رابط_الويب_آب_هنا";
 
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
-<script>
-const locations = [{"name": "تموينات عبدالله بن حامد بن امبارك الجابري للمواد الغذائية", "permit": "10011358", "phone": "555513588", "extra": "عمائر | الزهراء | جاهز", "lat": null, "lng": null, "has_coords": false, "link": "https://maps.app.goo.gl/24aVEbs9H68TWzaq8", "nationality": "النيجر", "theme": {"bg": "#dbeafe", "border": "#93c5fd", "text": "#1d4ed8", "dot": "#60a5fa"}}, {"name": "شركة فندق جوهرة البيان الفندقية", "permit": "10007845", "phone": "555075205", "extra": "فندق نجمة واحدة | الحجون | جاهز", "lat": null, "lng": null, "has_coords": false, "link": "https://maps.app.goo.gl/afKFM3fCK4GLKPGD7", "nationality": "النيجر", "theme": {"bg": "#dbeafe", "border": "#93c5fd", "text": "#1d4ed8", "dot": "#60a5fa"}}, {"name": "شركة محمد بن فالح الجابرى الفندقية", "permit": "10012070", "phone": "555503115", "extra": "عمائر | الهنداويه | جاهز", "lat": null, "lng": null, "has_coords": false, "link": "https://maps.app.goo.gl/xVjP7XfGHp2NqstT6", "nationality": "النيجر", "theme": {"bg": "#dbeafe", "border": "#93c5fd", "text": "#1d4ed8", "dot": "#60a5fa"}}, {"name": "فندق الرسالة الجوار للخدمات الفندقيه", "permit": "10012513", "phone": "555529403", "extra": "عمائر | الزهراء | جاهز", "lat": null, "lng": null, "has_coords": false, "link": "https://maps.app.goo.gl/qP9XfVcFN6hdq7XN8", "nationality": "النيجر", "theme": {"bg": "#dbeafe", "border": "#93c5fd", "text": "#1d4ed8", "dot": "#60a5fa"}}, {"name": "فندق جود الخير الفندقية", "permit": "10011565", "phone": "503264719", "extra": "عمائر | المنصور | جاهز", "lat": null, "lng": null, "has_coords": false, "link": "https://maps.app.goo.gl/qBj9EHDkBYrDDrc67", "nationality": "النيجر", "theme": {"bg": "#dbeafe", "border": "#93c5fd", "text": "#1d4ed8", "dot": "#60a5fa"}}, {"name": "فندق جوهرة الهدهد للضيافة السياحي", "permit": "10010107", "phone": "505500613", "extra": "فندق نجمة واحدة | القشلة | جاهز", "lat": null, "lng": null, "has_coords": false, "link": "https://maps.app.goo.gl/2dwxnNC9S6TkuBew6", "nationality": "النيجر", "theme": {"bg": "#dbeafe", "border": "#93c5fd", "text": "#1d4ed8", "dot": "#60a5fa"}}, {"name": "فندق حارث محمد صالح باحارث الفندقية", "permit": "10009281", "phone": "599990484", "extra": "فندق نجمة واحدة | التيسير | جاهز | جاهز جزئياً", "lat": null, "lng": null, "has_coords": false, "link": "https://maps.app.goo.gl/mXMaxNRpw2Mb1Ym37", "nationality": "النيجر", "theme": {"bg": "#dbeafe", "border": "#93c5fd", "text": "#1d4ed8", "dot": "#60a5fa"}}, {"name": "فندق درة الجوهرة للضيافة السياحي", "permit": "10012060", "phone": "503336649", "extra": "عمائر | المنصور | جاهز", "lat": null, "lng": null, "has_coords": false, "link": "https://maps.app.goo.gl/kUHLBdro89b1XPFt6", "nationality": "النيجر", "theme": {"bg": "#dbeafe", "border": "#93c5fd", "text": "#1d4ed8", "dot": "#60a5fa"}}, {"name": "فندق مقام النخبة للايواء السياحي", "permit": "10010195", "phone": "560549034", "extra": "فندق نجمة واحدة | الزهراء | جاهز", "lat": null, "lng": null, "has_coords": false, "link": "https://maps.app.goo.gl/yLD36bKn6DZGmiee7", "nationality": "النيجر", "theme": {"bg": "#dbeafe", "border": "#93c5fd", "text": "#1d4ed8", "dot": "#60a5fa"}}, {"name": "مؤسسة البحيرات الدولية للمقاولات العامة", "permit": "10012723", "phone": "583707748", "extra": "عمائر | جرول | جاهز", "lat": null, "lng": null, "has_coords": false, "link": "https://maps.app.goo.gl/TBoM3xuFyWzfsavJ8", "nationality": "النيجر", "theme": {"bg": "#dbeafe", "border": "#93c5fd", "text": "#1d4ed8", "dot": "#60a5fa"}}, {"name": "مؤسسة فندق روافد العاصمة الفندقية", "permit": "10010475", "phone": "580802063", "extra": "فندق نجمة واحدة | التقوى | جاهز", "lat": null, "lng": null, "has_coords": false, "link": "https://maps.app.goo.gl/LGMNL4xs3uBVhgki9", "nationality": "النيجر", "theme": {"bg": "#dbeafe", "border": "#93c5fd", "text": "#1d4ed8", "dot": "#60a5fa"}}, {"name": "نزل ديار الوعد للنزل السياحيه", "permit": "10011261", "phone": "565976017", "extra": "فندق نجمة واحدة | الحفاير | جاهز", "lat": null, "lng": null, "has_coords": false, "link": "https://maps.app.goo.gl/7cdpcmoNcWk8qPnD7", "nationality": "النيجر", "theme": {"bg": "#dbeafe", "border": "#93c5fd", "text": "#1d4ed8", "dot": "#60a5fa"}}, {"name": "نزل رباط المبرة للنزل السياحيه", "permit": "10012015", "phone": "504675220", "extra": "عمائر | العزيزية | جاهز", "lat": null, "lng": null, "has_coords": false, "link": "https://maps.app.goo.gl/9hMK2Pgf83WQm4mt6", "nationality": "النيجر", "theme": {"bg": "#dbeafe", "border": "#93c5fd", "text": "#1d4ed8", "dot": "#60a5fa"}}, {"name": "شركة سفير المسك الفندقية", "permit": "10006883", "phone": "533137720", "extra": "فندق نجمة واحدة | الحفائر | جاهز", "lat": null, "lng": null, "has_coords": false, "link": "https://maps.app.goo.gl/Ejv6edrysJtqKTHW7", "nationality": "النيجر", "theme": {"bg": "#dbeafe", "border": "#93c5fd", "text": "#1d4ed8", "dot": "#60a5fa"}}, {"name": "شركة نماء العصرية للفنادق", "permit": "10011089", "phone": "553893826", "extra": "فندق نجمة واحدة | جرول | جاهز", "lat": null, "lng": null, "has_coords": false, "link": "https://maps.app.goo.gl/Vkc5THYwivT9oZKt7", "nationality": "النيجر", "theme": {"bg": "#dbeafe", "border": "#93c5fd", "text": "#1d4ed8", "dot": "#60a5fa"}}, {"name": "فندق طلال بن محمد بن فالح الجابرى الفندقية", "permit": "10011432", "phone": "555503115", "extra": "عمائر | الهنداويه | جاهز", "lat": null, "lng": null, "has_coords": false, "link": "https://maps.app.goo.gl/6p1gy8JikrcEKKBz6", "nationality": "النيجر", "theme": {"bg": "#dbeafe", "border": "#93c5fd", "text": "#1d4ed8", "dot": "#60a5fa"}}, {"name": "تموينات عبدالله بن حامد بن امبارك الجابري للمواد الغذائية", "permit": "10011367", "phone": "555513588", "extra": "عمائر | الزهراء | جاهز", "lat": null, "lng": null, "has_coords": false, "link": "https://maps.app.goo.gl/3xD4fAMbSYz4Bs9i6", "nationality": "النيجر", "theme": {"bg": "#dbeafe", "border": "#93c5fd", "text": "#1d4ed8", "dot": "#60a5fa"}}, {"name": "شركة التطوير الحضري للاعمال شركة شخص واحد", "permit": "10010905", "phone": "569006555", "extra": "فندق نجمة واحدة | الزهراء | جاهز", "lat": null, "lng": null, "has_coords": false, "link": "https://maps.app.goo.gl/4r14558ZHbsbJFpHA", "nationality": "النيجر", "theme": {"bg": "#dbeafe", "border": "#93c5fd", "text": "#1d4ed8", "dot": "#60a5fa"}}, {"name": "شركة رحاب البركة المحدودة", "permit": "10012613", "phone": "551256935", "extra": "فندق نجمة واحدة | جرول | جاهز", "lat": null, "lng": null, "has_coords": false, "link": "https://maps.app.goo.gl/R62t5krBasverDq98", "nationality": "النيجر", "theme": {"bg": "#dbeafe", "border": "#93c5fd", "text": "#1d4ed8", "dot": "#60a5fa"}}, {"name": "شركة فندق وفاق المشاعر للضيافة السياحي", "permit": "10009584", "phone": "531288514", "extra": "فندق نجمة واحدة | العزيزية | جاهز", "lat": null, "lng": null, "has_coords": false, "link": "https://maps.app.goo.gl/GmxkqKJod6JifJTe7", "nationality": "النيجر", "theme": {"bg": "#dbeafe", "border": "#93c5fd", "text": "#1d4ed8", "dot": "#60a5fa"}}, {"name": "شقق درة الصالحين للشقق المخدومة", "permit": "10010088", "phone": "563996561", "extra": "فندق نجمتين | الحفاير | جاهز", "lat": null, "lng": null, "has_coords": false, "link": "https://maps.app.goo.gl/Z7MVUcXYAx1quteKA", "nationality": "النيجر", "theme": {"bg": "#dbeafe", "border": "#93c5fd", "text": "#1d4ed8", "dot": "#60a5fa"}}, {"name": "فندق رشيد الفضي الفندقية", "permit": "10008004", "phone": "542409929", "extra": "فندق نجمة واحدة | الزهراء | جاهز", "lat": null, "lng": null, "has_coords": false, "link": "https://maps.app.goo.gl/qzt9GbMfah6eqqqQ8", "nationality": "النيجر", "theme": {"bg": "#dbeafe", "border": "#93c5fd", "text": "#1d4ed8", "dot": "#60a5fa"}}, {"name": "فندق ليمة الذهبي للايواء السياحي", "permit": "10007534", "phone": "541949946", "extra": "فندق نجمة واحدة | الزهراء | جاهز", "lat": null, "lng": null, "has_coords": false, "link": "https://maps.app.goo.gl/jfio1ozvwEQrddeQ8", "nationality": "النيجر", "theme": {"bg": "#dbeafe", "border": "#93c5fd", "text": "#1d4ed8", "dot": "#60a5fa"}}, {"name": "فندق البرج الماسي للشقق الفندقية", "permit": "10011613", "phone": "505527756", "extra": "فندق نجمة واحدة | التقوي | جاهز", "lat": null, "lng": null, "has_coords": false, "link": "https://maps.app.goo.gl/Ahyw9kfdXUrEHKd79", "nationality": "النيجر", "theme": {"bg": "#dbeafe", "border": "#93c5fd", "text": "#1d4ed8", "dot": "#60a5fa"}}, {"name": "فندق سناء الفضي الفندقية", "permit": "10007286", "phone": "509666599", "extra": "فندق نجمة واحدة | التيسير | جاهز", "lat": null, "lng": null, "has_coords": false, "link": "https://maps.app.goo.gl/3GSPvnbaMfJbJoSs7", "nationality": "النيجر", "theme": {"bg": "#dbeafe", "border": "#93c5fd", "text": "#1d4ed8", "dot": "#60a5fa"}}, {"name": "مؤسسة حامد بن محمد بن حامد الحامد للتجارة", "permit": "10011399", "phone": "548729264", "extra": "عمائر | الزهراء | جاهز", "lat": null, "lng": null, "has_coords": false, "link": "https://maps.app.goo.gl/q2SxwmhVvY2ZxTDR8", "nationality": "النيجر", "theme": {"bg": "#dbeafe", "border": "#93c5fd", "text": "#1d4ed8", "dot": "#60a5fa"}}, {"name": "مؤسسة حامد بن محمد بن حامد الحامد للتجارة", "permit": "10011786", "phone": "548729264", "extra": "عمائر | الزهراء | جاهز", "lat": null, "lng": null, "has_coords": false, "link": "https://maps.app.goo.gl/chwB3QF6MUKN1PGi7", "nationality": "النيجر", "theme": {"bg": "#dbeafe", "border": "#93c5fd", "text": "#1d4ed8", "dot": "#60a5fa"}}, {"name": "مجموعة فندق منازل الفتح الفندقية", "permit": "10012242", "phone": "595058121", "extra": "عمائر | ام القرى | جاهز", "lat": null, "lng": null, "has_coords": false, "link": "https://maps.app.goo.gl/stwbXE65XeXg68cZ8", "nationality": "النيجر", "theme": {"bg": "#dbeafe", "border": "#93c5fd", "text": "#1d4ed8", "dot": "#60a5fa"}}, {"name": "مؤسسة سعد أحمد دمياطي للاسكان", "permit": "10012006", "phone": "505497600", "extra": "عمائر | الزهراء | جاهز", "lat": null, "lng": null, "has_coords": false, "link": "https://maps.app.goo.gl/cRh49GFBDESiLadCA", "nationality": "النيجر", "theme": {"bg": "#dbeafe", "border": "#93c5fd", "text": "#1d4ed8", "dot": "#60a5fa"}}, {"name": "مؤسسة مستور بن مبيريك بن امبارك المطرفي التجارية", "permit": "10011827", "phone": "555501652", "extra": "عمائر | الزهراء | جاهز", "lat": null, "lng": null, "has_coords": false, "link": "https://maps.app.goo.gl/JjSeJJzVFS3pbaZG9", "nationality": "النيجر", "theme": {"bg": "#dbeafe", "border": "#93c5fd", "text": "#1d4ed8", "dot": "#60a5fa"}}, {"name": "نزل الكفاءة المثاليه للنزل السياحيه", "permit": "10011452", "phone": "501080980", "extra": "فندق نجمة واحدة | الزهراء | جاهز", "lat": null, "lng": null, "has_coords": false, "link": "https://maps.app.goo.gl/6T5fphCAX9gZfcEx9", "nationality": "النيجر", "theme": {"bg": "#dbeafe", "border": "#93c5fd", "text": "#1d4ed8", "dot": "#60a5fa"}}, {"name": "نزل عمر بن سعيد بن عمر باحاذق للنزل السياحيه", "permit": "10011393", "phone": "546875184", "extra": "عمائر | الزهراء | جاهز", "lat": null, "lng": null, "has_coords": false, "link": "https://maps.app.goo.gl/HArudRfW4PHWEvrD7", "nationality": "النيجر", "theme": {"bg": "#dbeafe", "border": "#93c5fd", "text": "#1d4ed8", "dot": "#60a5fa"}}, {"name": "شركة العروج الفندقية شركة شخص واحد", "permit": "10012610", "phone": "561833360", "extra": "عمائر | التيسير | جاهز", "lat": null, "lng": null, "has_coords": false, "link": "https://maps.app.goo.gl/GJdwqdEWnYb9NbpC6", "nationality": "النيجر", "theme": {"bg": "#dbeafe", "border": "#93c5fd", "text": "#1d4ed8", "dot": "#60a5fa"}}, {"name": "شركة اوتاد المتحدة لتشغيل الفنادق", "permit": "10009141", "phone": "568846291", "extra": "فندق نجمة واحدة | الزهراء | جاهز", "lat": null, "lng": null, "has_coords": false, "link": "https://maps.app.goo.gl/yn8T8zHs9gTikJLLA", "nationality": "النيجر", "theme": {"bg": "#dbeafe", "border": "#93c5fd", "text": "#1d4ed8", "dot": "#60a5fa"}}, {"name": "فندق ضيافة جرول الفندقية", "permit": "10009208", "phone": "545553271", "extra": "فندق نجمة واحدة | جرول | جاهز", "lat": null, "lng": null, "has_coords": false, "link": "https://maps.app.goo.gl/hKZTq8hrQtn5qrNh9", "nationality": "النيجر", "theme": {"bg": "#dbeafe", "border": "#93c5fd", "text": "#1d4ed8", "dot": "#60a5fa"}}, {"name": "فندق وردة تولين الفندقية", "permit": "10007603", "phone": "503593320", "extra": "فندق نجمة واحدة | الزهراء | جاهز", "lat": null, "lng": null, "has_coords": false, "link": "https://maps.app.goo.gl/kNS3vfqP5795zKGf6", "nationality": "النيجر", "theme": {"bg": "#dbeafe", "border": "#93c5fd", "text": "#1d4ed8", "dot": "#60a5fa"}}, {"name": "مؤسسة ماهر غازى هندى", "permit": "10012108", "phone": "566309757", "extra": "عمائر | الهنداوية | جاهز", "lat": null, "lng": null, "has_coords": false, "link": "https://maps.app.goo.gl/Ru9r98Wgx4Tv2GkR6", "nationality": "النيجر", "theme": {"bg": "#dbeafe", "border": "#93c5fd", "text": "#1d4ed8", "dot": "#60a5fa"}}, {"name": "مؤسسة مستور بن مبيريك بن امبارك المطرفي التجارية", "permit": "10011847", "phone": "555501652", "extra": "عمائر | الزهراء | جاهز", "lat": null, "lng": null, "has_coords": false, "link": "https://maps.app.goo.gl/FPabNWTqp3gMjXxh8", "nationality": "النيجر", "theme": {"bg": "#dbeafe", "border": "#93c5fd", "text": "#1d4ed8", "dot": "#60a5fa"}}, {"name": "مؤسسة ياسر مطير الفهمي للمقاولات عامة", "permit": "10012304", "phone": "555901550", "extra": "عمائر | الزهراء | جاهز", "lat": null, "lng": null, "has_coords": false, "link": "https://maps.app.goo.gl/yXmWbEuoEnWoWLDv5", "nationality": "النيجر", "theme": {"bg": "#dbeafe", "border": "#93c5fd", "text": "#1d4ed8", "dot": "#60a5fa"}}, {"name": "نزل ندوة قريش للايواء السياحي", "permit": "10007882", "phone": "555508581", "extra": "فندق نجمة واحدة | التيسير | جاهز", "lat": null, "lng": null, "has_coords": false, "link": "https://maps.app.goo.gl/PUWLstsFrREtgjqE6", "nationality": "النيجر", "theme": {"bg": "#dbeafe", "border": "#93c5fd", "text": "#1d4ed8", "dot": "#60a5fa"}}, {"name": "شركة اتزان التسهيلات العقارية", "permit": "10012373", "phone": "565155355", "extra": "عمائر | الرصيفة | جاهز", "lat": null, "lng": null, "has_coords": false, "link": "https://maps.app.goo.gl/9PTS5gSSMGhX7cLR8?g_st=ic", "nationality": "النيجر", "theme": {"bg": "#dbeafe", "border": "#93c5fd", "text": "#1d4ed8", "dot": "#60a5fa"}}, {"name": "شركة تسنم للمقاولات العامة شركة شخص واحد", "permit": "10012203", "phone": "555506034", "extra": "عمائر | التيسير | جاهز", "lat": null, "lng": null, "has_coords": false, "link": "https://maps.app.goo.gl/T4baHcipb55GPjia9", "nationality": "النيجر", "theme": {"bg": "#dbeafe", "border": "#93c5fd", "text": "#1d4ed8", "dot": "#60a5fa"}}, {"name": "شركة كوثر الضيافه للخدمات الفندقية شخص واحد", "permit": "10009631", "phone": "568846291", "extra": "فندق نجمة واحدة | الهنداوية | جاهز", "lat": null, "lng": null, "has_coords": false, "link": "https://maps.app.goo.gl/wFsR66JC1x7t4Ynq6", "nationality": "النيجر", "theme": {"bg": "#dbeafe", "border": "#93c5fd", "text": "#1d4ed8", "dot": "#60a5fa"}}, {"name": "شركة رحاب البركة المحدودة", "permit": "10012001", "phone": "551256935", "extra": "عمائر | الزهراء | جاهز", "lat": null, "lng": null, "has_coords": false, "link": "https://maps.app.goo.gl/R62t5krBasverDq98", "nationality": "النيجر", "theme": {"bg": "#dbeafe", "border": "#93c5fd", "text": "#1d4ed8", "dot": "#60a5fa"}}, {"name": "فندق منابر المحبة الفندقية", "permit": "10012067", "phone": "590944955", "extra": "عمائر | التيسير | جاهز", "lat": null, "lng": null, "has_coords": false, "link": "https://maps.app.goo.gl/k3YgNSjSqYa5dVgUA", "nationality": "النيجر", "theme": {"bg": "#dbeafe", "border": "#93c5fd", "text": "#1d4ed8", "dot": "#60a5fa"}}, {"name": "مؤسسة ضيف الله بن دخيل بن دخيل الله الرشيدي", "permit": "10011408", "phone": "555509662", "extra": "عمائر | الزهراء | جاهز", "lat": null, "lng": null, "has_coords": false, "link": "https://maps.app.goo.gl/Mu1oq7AFZtAEyua2A", "nationality": "النيجر", "theme": {"bg": "#dbeafe", "border": "#93c5fd", "text": "#1d4ed8", "dot": "#60a5fa"}}, {"name": "مجموعة فندق منازل الفتح الفندقية", "permit": "10011876", "phone": "595058121", "extra": "عمائر | العزيزية | جاهز", "lat": null, "lng": null, "has_coords": false, "link": "https://maps.app.goo.gl/kfb3MQDdYjx1PX4BA", "nationality": "النيجر", "theme": {"bg": "#dbeafe", "border": "#93c5fd", "text": "#1d4ed8", "dot": "#60a5fa"}}, {"name": "شركة ضيافة الطلائع للشقق المخدومة", "permit": "10007849", "phone": "506159273", "extra": "فندق نجمتين | العزيزية | جاهز | بانتظار الموافقه بالمسار", "lat": null, "lng": null, "has_coords": false, "link": "https://maps.app.goo.gl/cgQhW473194m6pxJ8", "nationality": "النيجر", "theme": {"bg": "#dbeafe", "border": "#93c5fd", "text": "#1d4ed8", "dot": "#60a5fa"}}, {"name": "فندق درة الراشدين الفندقية", "permit": "10007379", "phone": "547588111", "extra": "فندق نجمة واحدة | السليمانية الغربي | جاهز | بانتظار الموافقه بالمسار", "lat": null, "lng": null, "has_coords": false, "link": "https://maps.app.goo.gl/ZhkCC5TjWVPj46yn9", "nationality": "النيجر", "theme": {"bg": "#dbeafe", "border": "#93c5fd", "text": "#1d4ed8", "dot": "#60a5fa"}}, {"name": "نزل وليد ابراهيم بن حميد الحربي للنزل السياحيه", "permit": "10012779", "phone": "555592047", "extra": "عمائر | الرصيفة | جاهز | بانتظار تأكيد الدفع بالمسار", "lat": null, "lng": null, "has_coords": false, "link": "https://maps.app.goo.gl/19UnzHCgL5XSAaDM8", "nationality": "النيجر", "theme": {"bg": "#dbeafe", "border": "#93c5fd", "text": "#1d4ed8", "dot": "#60a5fa"}}, {"name": "شركة المنظومة الواحدة للمقاولات المعمارية شخص واحد", "permit": "10012477", "phone": "541167722", "extra": "فندق نجمة واحدة | جرول | جاهز", "lat": null, "lng": null, "has_coords": false, "link": "https://maps.app.goo.gl/7dYi63NwBbErWRh87", "nationality": "النيجر", "theme": {"bg": "#dbeafe", "border": "#93c5fd", "text": "#1d4ed8", "dot": "#60a5fa"}}, {"name": "فندق مناسك البيت للايواء السياحي", "permit": "10009008", "phone": "555560311", "extra": "فندق نجمة واحدة | الزهراء | جاهز", "lat": null, "lng": null, "has_coords": false, "link": "https://maps.app.goo.gl/2wEpYcSe4BMFoQg88", "nationality": "النيجر", "theme": {"bg": "#dbeafe", "border": "#93c5fd", "text": "#1d4ed8", "dot": "#60a5fa"}}, {"name": "مؤسسة سمير صالح حمزه صدقه للمقاولات عامة", "permit": "10012715", "phone": "566561566", "extra": "عمائر | الزهراء | جاهز", "lat": null, "lng": null, "has_coords": false, "link": "https://maps.app.goo.gl/TDrxMfB99SnJJdpv9", "nationality": "النيجر", "theme": {"bg": "#dbeafe", "border": "#93c5fd", "text": "#1d4ed8", "dot": "#60a5fa"}}, {"name": "مؤسسة سمير صالح حمزه صدقه للمقاولات عامة", "permit": "10012714", "phone": "566561566", "extra": "عمائر | الزهراء | جاهز", "lat": null, "lng": null, "has_coords": false, "link": "https://maps.app.goo.gl/DaQLJCmWASHJobaF8", "nationality": "النيجر", "theme": {"bg": "#dbeafe", "border": "#93c5fd", "text": "#1d4ed8", "dot": "#60a5fa"}}, {"name": "مؤسسة احمد محمدفاروق الانا", "permit": "10012537", "phone": "553415577", "extra": "عمائر | الزهراء | غير جاهز", "lat": null, "lng": null, "has_coords": false, "link": "https://maps.app.goo.gl/X4pfPBgHgc5wjMH48", "nationality": "النيجر", "theme": {"bg": "#dbeafe", "border": "#93c5fd", "text": "#1d4ed8", "dot": "#60a5fa"}}, {"name": "مؤسسة أنس ابراهيم سليم القرشي للعقارات", "permit": "10012691", "phone": "504629577", "extra": "عمائر | جرول | غير جاهز", "lat": null, "lng": null, "has_coords": false, "link": "https://maps.app.goo.gl/Q7mR2tASV6uCKGw7A", "nationality": "النيجر", "theme": {"bg": "#dbeafe", "border": "#93c5fd", "text": "#1d4ed8", "dot": "#60a5fa"}}, {"name": "نزل وردة قريش للايواء السياحي", "permit": "10007769", "phone": "555508581", "extra": "فندق نجمة واحدة | التيسير | غير جاهز", "lat": null, "lng": null, "has_coords": false, "link": "https://maps.app.goo.gl/TsLwUuKLZDddBgsk9", "nationality": "النيجر", "theme": {"bg": "#dbeafe", "border": "#93c5fd", "text": "#1d4ed8", "dot": "#60a5fa"}}, {"name": "شركة سنود اجياد للخدمات الفندقيه شركة شخص واحد", "permit": "10006665", "phone": "598815182", "extra": "نجمتين | اجياد | جاهز | جاهز جزئياً", "lat": null, "lng": null, "has_coords": false, "link": "https://maps.app.goo.gl/zQREhFVDg7GiYs1L8", "nationality": "مصر", "theme": {"bg": "#fee2e2", "border": "#fca5a5", "text": "#b91c1c", "dot": "#f87171"}}, {"name": "فندق الرافدين اجياد الفندقية", "permit": "10009177", "phone": "555560311", "extra": "نجمة | اجياد | جاهز | جاهز جزئياً", "lat": null, "lng": null, "has_coords": false, "link": "https://maps.app.goo.gl/EE4omTxFMF3yVoXw5", "nationality": "مصر", "theme": {"bg": "#fee2e2", "border": "#fca5a5", "text": "#b91c1c", "dot": "#f87171"}}, {"name": "فندق بكة رويال الفندقية", "permit": "10007868", "phone": "555560311", "extra": "نجمة | اجياد بئر بليلة | جاهز", "lat": null, "lng": null, "has_coords": false, "link": "https://maps.app.goo.gl/Hcmmh3m4WoAopCJZ7", "nationality": "مصر", "theme": {"bg": "#fee2e2", "border": "#fca5a5", "text": "#b91c1c", "dot": "#f87171"}}, {"name": "شركة القصواء للسفر و السياحة", "permit": "10010872", "phone": "560906080", "extra": "نجمة | الروابي | جاهز", "lat": null, "lng": null, "has_coords": false, "link": "https://maps.app.goo.gl/BmzojPFt6psfuA18A", "nationality": "مصر", "theme": {"bg": "#fee2e2", "border": "#fca5a5", "text": "#b91c1c", "dot": "#f87171"}}, {"name": "مؤسسة مشاعل عدنان الكيشان التجارية", "permit": "10011665", "phone": "555220164", "extra": "عمائر | الزاهر | جاهز", "lat": null, "lng": null, "has_coords": false, "link": "https://maps.app.goo.gl/HtcjKHTZ3PwCkyex5", "nationality": "مصر", "theme": {"bg": "#fee2e2", "border": "#fca5a5", "text": "#b91c1c", "dot": "#f87171"}}, {"name": "فندق جوهرة النزهة الفندقية", "permit": "10011735", "phone": "500808022", "extra": "نجمة | الزاهر | جاهز", "lat": null, "lng": null, "has_coords": false, "link": "https://maps.app.goo.gl/wfTchEFZUAjWtUK3A", "nationality": "مصر", "theme": {"bg": "#fee2e2", "border": "#fca5a5", "text": "#b91c1c", "dot": "#f87171"}}, {"name": "مؤسسة أسامه سعد بن حامد سنكى للمقاولات العامة", "permit": "10011470", "phone": "555027909", "extra": "عمائر | المرسلات | جاهز", "lat": null, "lng": null, "has_coords": false, "link": "https://maps.app.goo.gl/e1NJXahE1s6kJSmk8", "nationality": "مصر", "theme": {"bg": "#fee2e2", "border": "#fca5a5", "text": "#b91c1c", "dot": "#f87171"}}, {"name": "فندق اعمار جراند الفندقية", "permit": "10002106", "phone": "567777477", "extra": "نجمة | المسفلة | جاهز | جاهز جزئياً", "lat": null, "lng": null, "has_coords": false, "link": "https://maps.app.goo.gl/wQ5U6rBeZ7Qb87jb9", "nationality": "مصر", "theme": {"bg": "#fee2e2", "border": "#fca5a5", "text": "#b91c1c", "dot": "#f87171"}}, {"name": "فندق برج البلاد واحد للايواء السياحي", "permit": "10009907", "phone": "555892526", "extra": "نجمة | النزهه | جاهز | جاهز جزئياً", "lat": null, "lng": null, "has_coords": false, "link": "https://maps.app.goo.gl/fykZG5uJ5SoBRt6P9", "nationality": "مصر", "theme": {"bg": "#fee2e2", "border": "#fca5a5", "text": "#b91c1c", "dot": "#f87171"}}, {"name": "مؤسسة منصور وصل الله الثبيتي", "permit": "10011662", "phone": "551110085", "extra": "نجمة | النسيم | جاهز", "lat": null, "lng": null, "has_coords": false, "link": "https://maps.app.goo.gl/qzp5DsSHZvbatj2N8", "nationality": "مصر", "theme": {"bg": "#fee2e2", "border": "#fca5a5", "text": "#b91c1c", "dot": "#f87171"}}, {"name": "شركة سجى للخدمات الفندقيه", "permit": "10008164", "phone": "509213555", "extra": "3 نجوم | المسفلة | جاهز | جاهز جزئياً", "lat": null, "lng": null, "has_coords": false, "link": "https://maps.app.goo.gl/hjsUgmUucr11Tggc9", "nationality": "مصر", "theme": {"bg": "#fee2e2", "border": "#fca5a5", "text": "#b91c1c", "dot": "#f87171"}}, {"name": "شركة برايد اند جوي العربية للمقاولات شركة شخص واحد", "permit": "10009523", "phone": "581956074", "extra": "نجمة | الجامعة | جاهز", "lat": null, "lng": null, "has_coords": false, "link": "https://maps.app.goo.gl/frooWYvZdhWs7axm8", "nationality": "مصر", "theme": {"bg": "#fee2e2", "border": "#fca5a5", "text": "#b91c1c", "dot": "#f87171"}}, {"name": "شركة مواسم العزيزية للخدمات الفندقيه شخص واحد", "permit": "10009924", "phone": "555560672", "extra": "نجمة | الجامعة | جاهز", "lat": null, "lng": null, "has_coords": false, "link": "https://maps.app.goo.gl/KwdypbYNocujKPv1A", "nationality": "مصر", "theme": {"bg": "#fee2e2", "border": "#fca5a5", "text": "#b91c1c", "dot": "#f87171"}}, {"name": "شركة أوتاد البدر", "permit": "10011290", "phone": "595628426", "extra": "نجمة | الروضة | جاهز", "lat": null, "lng": null, "has_coords": false, "link": "https://maps.app.goo.gl/W47837ogD4AgPxqb9", "nationality": "مصر", "theme": {"bg": "#fee2e2", "border": "#fca5a5", "text": "#b91c1c", "dot": "#f87171"}}, {"name": "شركة الماسة الخاصة المحدودة", "permit": "10002510", "phone": "566775333", "extra": "3 نجوم | الروضة | جاهز", "lat": null, "lng": null, "has_coords": false, "link": "https://maps.app.goo.gl/498Aj3x26vW6h6XN8", "nationality": "مصر", "theme": {"bg": "#fee2e2", "border": "#fca5a5", "text": "#b91c1c", "dot": "#f87171"}}, {"name": "فندق ربوة الصفوه لصاحبها يوسف زبن الله العطير", "permit": "10009843", "phone": "555701765", "extra": "نجمة | الزاهر | جاهز", "lat": null, "lng": null, "has_coords": false, "link": "https://maps.app.goo.gl/TeSzWhyPJ6W9Ln4L8", "nationality": "مصر", "theme": {"bg": "#fee2e2", "border": "#fca5a5", "text": "#b91c1c", "dot": "#f87171"}}, {"name": "فندق اوتاد المتحده للضيافة السياحي", "permit": "10007010", "phone": "500420295", "extra": "نجمة | الششة | جاهز | جاهز جزئياً", "lat": null, "lng": null, "has_coords": false, "link": "https://maps.app.goo.gl/exibNosDm48ptznJ7", "nationality": "مصر", "theme": {"bg": "#fee2e2", "border": "#fca5a5", "text": "#b91c1c", "dot": "#f87171"}}, {"name": "شركة مساكن الانوار الذهبية المحدودة", "permit": "10011783", "phone": "542410026", "extra": "عمائر | الضيافة | جاهز", "lat": null, "lng": null, "has_coords": false, "link": "https://maps.app.goo.gl/bEtM9yKuvqmfdYN76", "nationality": "مصر", "theme": {"bg": "#fee2e2", "border": "#fca5a5", "text": "#b91c1c", "dot": "#f87171"}}, {"name": "مؤسسة مشاعل عدنان الكيشان التجارية", "permit": "10011381", "phone": "555220164", "extra": "عمائر | الضيافة | جاهز", "lat": null, "lng": null, "has_coords": false, "link": "https://maps.app.goo.gl/YPKstBXpTG9KxCZr7", "nationality": "مصر", "theme": {"bg": "#fee2e2", "border": "#fca5a5", "text": "#b91c1c", "dot": "#f87171"}}, {"name": "نزل ضاحية النزهة للنزل السياحيه", "permit": "10011677", "phone": "505507963", "extra": "نجمة | الضيافة | جاهز", "lat": null, "lng": null, "has_coords": false, "link": "https://maps.app.goo.gl/xfNpfRoTjkuqJvzL6", "nationality": "مصر", "theme": {"bg": "#fee2e2", "border": "#fca5a5", "text": "#b91c1c", "dot": "#f87171"}}, {"name": "شركة الماسة المشاعر لتشغيل الفنادق", "permit": "10009402", "phone": "554404092", "extra": "نجمة | العزيزية | جاهز", "lat": null, "lng": null, "has_coords": false, "link": "https://maps.app.goo.gl/iTfvZfYesjE5F5vk7", "nationality": "مصر", "theme": {"bg": "#fee2e2", "border": "#fca5a5", "text": "#b91c1c", "dot": "#f87171"}}, {"name": "شركة ميسان الصفوة الفندقية شخص واحد", "permit": "10009792", "phone": "541699662", "extra": "نجمة | العزيزية | جاهز | جاهز جزئياً", "lat": null, "lng": null, "has_coords": false, "link": "https://maps.app.goo.gl/3YNyxBZidmJvj4Dz9", "nationality": "مصر", "theme": {"bg": "#fee2e2", "border": "#fca5a5", "text": "#b91c1c", "dot": "#f87171"}}, {"name": "شركة رواء المكارم للضيافة السياحي", "permit": "10008223", "phone": "504789260", "extra": "نجمة | العزيزيه | جاهز", "lat": null, "lng": null, "has_coords": false, "link": "https://maps.app.goo.gl/mVzFM2g8i2jRqSJu5", "nationality": "مصر", "theme": {"bg": "#fee2e2", "border": "#fca5a5", "text": "#b91c1c", "dot": "#f87171"}}, {"name": "شركة سرايا العز لتشغيل الفنادق", "permit": "10010153", "phone": "566660222", "extra": "نجمة | النزهة | جاهز", "lat": null, "lng": null, "has_coords": false, "link": "https://maps.app.goo.gl/uzneEMyYZYooT2NQA", "nationality": "مصر", "theme": {"bg": "#fee2e2", "border": "#fca5a5", "text": "#b91c1c", "dot": "#f87171"}}, {"name": "شركة فندق وفاق المشاعر للضيافة السياحي", "permit": "10007078", "phone": "531288514", "extra": "نجمة | النزهة | جاهز", "lat": null, "lng": null, "has_coords": false, "link": "https://maps.app.goo.gl/ckQBbFMeGk1GED9m9", "nationality": "مصر", "theme": {"bg": "#fee2e2", "border": "#fca5a5", "text": "#b91c1c", "dot": "#f87171"}}, {"name": "مطعم روابي الحجاز المبشور لتقديم الوجبات", "permit": "10012193", "phone": "555180854", "extra": "نجمة | النزهة | جاهز", "lat": null, "lng": null, "has_coords": false, "link": "https://maps.app.goo.gl/XyALg9acW6rA9RWNA", "nationality": "مصر", "theme": {"bg": "#fee2e2", "border": "#fca5a5", "text": "#b91c1c", "dot": "#f87171"}}, {"name": "شركة تارا", "permit": "10008955", "phone": "506880450", "extra": "نجمة | الهجرة | جاهز", "lat": null, "lng": null, "has_coords": false, "link": "https://maps.app.goo.gl/ZVxin2295TfhaPGE8", "nationality": "مصر", "theme": {"bg": "#fee2e2", "border": "#fca5a5", "text": "#b91c1c", "dot": "#f87171"}}, {"name": "شركة الصفوة اوركيد الذهبية الفندقية شركة شخص واحد", "permit": "10007435", "phone": "555991418", "extra": "3 نجوم | أجياد | جاهز", "lat": null, "lng": null, "has_coords": false, "link": "https://maps.app.goo.gl/eYEZffBAH27xzzvo7", "nationality": "مصر", "theme": {"bg": "#fee2e2", "border": "#fca5a5", "text": "#b91c1c", "dot": "#f87171"}}, {"name": "فندق سدير كرم الفندقية", "permit": "10001652", "phone": "504789260", "extra": "نجمة | كدي | جاهز", "lat": null, "lng": null, "has_coords": false, "link": "https://maps.app.goo.gl/ojr4nrX4a5rsFsBa7?g_st=ic", "nationality": "مصر", "theme": {"bg": "#fee2e2", "border": "#fca5a5", "text": "#b91c1c", "dot": "#f87171"}}, {"name": "فندق النسيم السهلة للخدمات الفندقيه", "permit": "10009759", "phone": "555470678", "extra": "نجمة | الروابي | جاهز", "lat": null, "lng": null, "has_coords": false, "link": "https://maps.app.goo.gl/NH6LxWFteq2g7Y2o8", "nationality": "مصر", "theme": {"bg": "#fee2e2", "border": "#fca5a5", "text": "#b91c1c", "dot": "#f87171"}}, {"name": "فندق إيثار الوهج الفندقية", "permit": "10009500", "phone": "555541407", "extra": "نجمة | الروابي | جاهز", "lat": null, "lng": null, "has_coords": false, "link": "https://maps.app.goo.gl/3vQ6DW92TViNAW8cA", "nationality": "مصر", "theme": {"bg": "#fee2e2", "border": "#fca5a5", "text": "#b91c1c", "dot": "#f87171"}}, {"name": "شركة برهان التجارة المحدودة", "permit": "10012200", "phone": "505509772", "extra": "عمائر | النزهة | جاهز", "lat": null, "lng": null, "has_coords": false, "link": "https://maps.app.goo.gl/jp1BX1uHMVHpebX3A", "nationality": "مصر", "theme": {"bg": "#fee2e2", "border": "#fca5a5", "text": "#b91c1c", "dot": "#f87171"}}, {"name": "شركة برهان التجارة المحدودة", "permit": "10012201", "phone": "505509772", "extra": "عمائر | النزهة | جاهز", "lat": null, "lng": null, "has_coords": false, "link": "https://maps.app.goo.gl/nMAmKvTFbMi5ENAQA", "nationality": "مصر", "theme": {"bg": "#fee2e2", "border": "#fca5a5", "text": "#b91c1c", "dot": "#f87171"}}, {"name": "فندق اعمار النزهه المتميز", "permit": "10012230", "phone": "567777477", "extra": "نجمة | النزهه | جاهز", "lat": null, "lng": null, "has_coords": false, "link": "https://maps.app.goo.gl/PpvqBcoVnS2Kxxzm6", "nationality": "مصر", "theme": {"bg": "#fee2e2", "border": "#fca5a5", "text": "#b91c1c", "dot": "#f87171"}}, {"name": "فندق ايلاف اجياد فرع شركة ايلاف للفنادق", "permit": "10006726", "phone": "503626560", "extra": "نجمة | أجياد المصافي | جاهز", "lat": null, "lng": null, "has_coords": false, "link": "https://maps.app.goo.gl/Ruk67RLkNxtG7cS26", "nationality": "مصر", "theme": {"bg": "#fee2e2", "border": "#fca5a5", "text": "#b91c1c", "dot": "#f87171"}}, {"name": "شركة روتانا جبل عمر", "permit": "10011279", "phone": "541250077", "extra": "نجمة | جرهم | جاهز", "lat": null, "lng": null, "has_coords": false, "link": "https://maps.app.goo.gl/aTWe2GcPfXmpEqh89", "nationality": "مصر", "theme": {"bg": "#fee2e2", "border": "#fca5a5", "text": "#b91c1c", "dot": "#f87171"}}, {"name": "شركة منار البيت الفندقية", "permit": "10009810", "phone": "555560311", "extra": "نجمة | الششة | جاهز", "lat": null, "lng": null, "has_coords": false, "link": "https://maps.app.goo.gl/8dbeFq1TS2VS5Yef8", "nationality": "مصر", "theme": {"bg": "#fee2e2", "border": "#fca5a5", "text": "#b91c1c", "dot": "#f87171"}}, {"name": "شركة ادم الخير الفندقية", "permit": "10011778", "phone": "543301585", "extra": "عمائر | النزهة | جاهز", "lat": null, "lng": null, "has_coords": false, "link": "https://maps.app.goo.gl/rhgCsicpjDDWoMTv7", "nationality": "مصر", "theme": {"bg": "#fee2e2", "border": "#fca5a5", "text": "#b91c1c", "dot": "#f87171"}}, {"name": "شركة ثروات المشاعر للسياحة", "permit": "10011803", "phone": "545282950", "extra": "نجمة | النزهة | جاهز", "lat": null, "lng": null, "has_coords": false, "link": "https://maps.app.goo.gl/zhzsn9D63ykNdGay9", "nationality": "مصر", "theme": {"bg": "#fee2e2", "border": "#fca5a5", "text": "#b91c1c", "dot": "#f87171"}}, {"name": "شركة ادم الخير الفندقية", "permit": "10012094", "phone": "554299594", "extra": "عمائر | النزهة | جاهز", "lat": null, "lng": null, "has_coords": false, "link": "https://maps.app.goo.gl/QtXDE78jKMU8Zq7PA", "nationality": "مصر", "theme": {"bg": "#fee2e2", "border": "#fca5a5", "text": "#b91c1c", "dot": "#f87171"}}, {"name": "شركة محمد بن فالح الجابرى الفندقية", "permit": "10011431", "phone": "555504773", "extra": "نجمة | النزهه | جاهز", "lat": null, "lng": null, "has_coords": false, "link": "https://maps.app.goo.gl/eDEf4bY6dsiPHhjK8", "nationality": "مصر", "theme": {"bg": "#fee2e2", "border": "#fca5a5", "text": "#b91c1c", "dot": "#f87171"}}, {"name": "فندق الصفوة رويال أوركيد الفندقية", "permit": "10010798", "phone": "555701765", "extra": "نجمة | أجياد | جاهز", "lat": null, "lng": null, "has_coords": false, "link": "https://maps.app.goo.gl/zYUwaYmDopv6scJn7", "nationality": "مصر", "theme": {"bg": "#fee2e2", "border": "#fca5a5", "text": "#b91c1c", "dot": "#f87171"}}, {"name": "فندق اعمار اندلسية الفندقية", "permit": "10006386", "phone": "567777477", "extra": "3 نجوم | المسفلة | جاهز", "lat": null, "lng": null, "has_coords": false, "link": "https://maps.app.goo.gl/7JYhaVpu5Fbg6tGS8", "nationality": "مصر", "theme": {"bg": "#fee2e2", "border": "#fca5a5", "text": "#b91c1c", "dot": "#f87171"}}, {"name": "شركة ابراج ساره للاستثمار العقاري فندق سويس أوتيل المقام مكة", "permit": "10007391", "phone": "567266347", "extra": "4نجوم | جاهز", "lat": null, "lng": null, "has_coords": false, "link": "https://maps.app.goo.gl/hM47MYYscS4HKbqV9", "nationality": "مصر", "theme": {"bg": "#fee2e2", "border": "#fca5a5", "text": "#b91c1c", "dot": "#f87171"}}, {"name": "شركة أبراج ساره للاستثمار العقاري فندق مكةسويس اوتيل", "permit": "10007774", "phone": "567266347", "extra": "5 نجوم | جاهز", "lat": null, "lng": null, "has_coords": false, "link": "https://maps.app.goo.gl/fZuPykhxsQKGKMXH7", "nationality": "مصر", "theme": {"bg": "#fee2e2", "border": "#fca5a5", "text": "#b91c1c", "dot": "#f87171"}}, {"name": "شركة البرج العالمية لادارة الفنادق فندق ساعة مكة فيرمونت", "permit": "10007336", "phone": "567266404", "extra": "5نجوم | جاهز", "lat": null, "lng": null, "has_coords": false, "link": "https://maps.app.goo.gl/XMkUoDm4Lu6VzDaJ6", "nationality": "مصر", "theme": {"bg": "#fee2e2", "border": "#fca5a5", "text": "#b91c1c", "dot": "#f87171"}}, {"name": "شركة البرج العالمية للاستثمار العقاري فندق قصر مكة رفلز", "permit": "10007941", "phone": "546945132", "extra": "5نجوم | جاهز", "lat": null, "lng": null, "has_coords": false, "link": "https://maps.app.goo.gl/tdN6HqwtmKcoQfqc9", "nationality": "مصر", "theme": {"bg": "#fee2e2", "border": "#fca5a5", "text": "#b91c1c", "dot": "#f87171"}}, {"name": "شركة أنجم لتشغيل الفنادق", "permit": "10001487", "phone": "531896176", "extra": "5نجوم | جاهز", "lat": null, "lng": null, "has_coords": false, "link": "https://maps.app.goo.gl/TfThJj8au8q5fVNQA", "nationality": "مصر", "theme": {"bg": "#fee2e2", "border": "#fca5a5", "text": "#b91c1c", "dot": "#f87171"}}, {"name": "شركة برج هاجر العقارية المحدودة", "permit": "10001330", "phone": "555535747", "extra": "4 نجوم | جاهز", "lat": null, "lng": null, "has_coords": false, "link": "https://maps.app.goo.gl/5iJLPynnDbFVQKTU9", "nationality": "مصر", "theme": {"bg": "#fee2e2", "border": "#fca5a5", "text": "#b91c1c", "dot": "#f87171"}}, {"name": "شركة شيراتون مكة شركة شخص واحد", "permit": "10009788", "phone": "567996997", "extra": "4 نجوم | جاهز", "lat": null, "lng": null, "has_coords": false, "link": "https://maps.app.goo.gl/dRD8iGUujj7akDxXA", "nationality": "مصر", "theme": {"bg": "#fee2e2", "border": "#fca5a5", "text": "#b91c1c", "dot": "#f87171"}}, {"name": "شركة مأثر الضيافة لخدمات المعتمرين", "permit": "10001669", "phone": "549000802", "extra": "4 نجوم | جاهز", "lat": null, "lng": null, "has_coords": false, "link": "https://maps.app.goo.gl/Gfj3toDi82cHi3Hk9", "nationality": "مصر", "theme": {"bg": "#fee2e2", "border": "#fca5a5", "text": "#b91c1c", "dot": "#f87171"}}, {"name": "فندق المروة ريحان فرع شركة جوار لإدارة وتسويق وتطوير العقار", "permit": "10007293", "phone": "541046943", "extra": "4 نجوم | جاهز", "lat": null, "lng": null, "has_coords": false, "link": "https://maps.app.goo.gl/M1aVCkCw2o8a89NE9", "nationality": "مصر", "theme": {"bg": "#fee2e2", "border": "#fca5a5", "text": "#b91c1c", "dot": "#f87171"}}, {"name": "فندق جبل عمر حياة ريجنسي", "permit": "10000596", "phone": "506506762", "extra": "5 نجوم | جاهز", "lat": null, "lng": null, "has_coords": false, "link": "https://maps.app.goo.gl/o4Y38G3X1K2aEDUYA", "nationality": "مصر", "theme": {"bg": "#fee2e2", "border": "#fca5a5", "text": "#b91c1c", "dot": "#f87171"}}, {"name": "فندق جبل عمر كونراد", "permit": "10007126", "phone": "556619751", "extra": "5 نجوم | جاهز", "lat": null, "lng": null, "has_coords": false, "link": "https://maps.app.goo.gl/vsQA7uRxecMgp8n57", "nationality": "مصر", "theme": {"bg": "#fee2e2", "border": "#fca5a5", "text": "#b91c1c", "dot": "#f87171"}}, {"name": "فندق جبل عمر ماريوت", "permit": "10007441", "phone": "504524575", "extra": "5 نجوم | جاهز", "lat": null, "lng": null, "has_coords": false, "link": "https://maps.app.goo.gl/ykHdpH3ptpvEfQbN8", "nationality": "مصر", "theme": {"bg": "#fee2e2", "border": "#fca5a5", "text": "#b91c1c", "dot": "#f87171"}}, {"name": "فندق جبل عمر هيلتون", "permit": "10001038", "phone": "555185879", "extra": "5 نجوم | جاهز", "lat": null, "lng": null, "has_coords": false, "link": "https://maps.app.goo.gl/S811NLwSAZf7tmX99", "nationality": "مصر", "theme": {"bg": "#fee2e2", "border": "#fca5a5", "text": "#b91c1c", "dot": "#f87171"}}, {"name": "فندق مكارم اجياد مكة", "permit": "10001021", "phone": "561375061", "extra": "5 نجوم | جاهز", "lat": null, "lng": null, "has_coords": false, "link": "https://maps.app.goo.gl/AdZWvrgnci3UYtSU7", "nationality": "مصر", "theme": {"bg": "#fee2e2", "border": "#fca5a5", "text": "#b91c1c", "dot": "#f87171"}}, {"name": "شركة فندق اجواد السلام الفندقية", "permit": "10012185", "phone": "544433441", "extra": "نجمة | المرسلات | جاهز", "lat": null, "lng": null, "has_coords": false, "link": "https://maps.app.goo.gl/dauwbDCyXt1AAPVV6", "nationality": "مصر", "theme": {"bg": "#fee2e2", "border": "#fca5a5", "text": "#b91c1c", "dot": "#f87171"}}, {"name": "مؤسسة زهرة خضيراء للمقاولات عامة", "permit": "10011652", "phone": "505401080", "extra": "نجمة | المرسلات | جاهز", "lat": null, "lng": null, "has_coords": false, "link": "https://maps.app.goo.gl/AgG1U25hWugdG8QE9", "nationality": "مصر", "theme": {"bg": "#fee2e2", "border": "#fca5a5", "text": "#b91c1c", "dot": "#f87171"}}, {"name": "فندق أنوار المنارات الذهبية الفندقية", "permit": "10009702", "phone": "543124935", "extra": "نجمة | المعابدة | جاهز", "lat": null, "lng": null, "has_coords": false, "link": "https://maps.app.goo.gl/HjWFbHmW3nADPndD8", "nationality": "مصر", "theme": {"bg": "#fee2e2", "border": "#fca5a5", "text": "#b91c1c", "dot": "#f87171"}}, {"name": "نزل روابي الوهج للنزل السياحيه", "permit": "10009499", "phone": "555541407", "extra": "نجمة | الروابي | جاهز", "lat": null, "lng": null, "has_coords": false, "link": "https://maps.app.goo.gl/SGyw6jF7MRrYTZbHA", "nationality": "مصر", "theme": {"bg": "#fee2e2", "border": "#fca5a5", "text": "#b91c1c", "dot": "#f87171"}}, {"name": "فندق روائح المسك واحد الفندقية", "permit": "10009173", "phone": "564800405", "extra": "نجمة | العزيزية | جاهز", "lat": null, "lng": null, "has_coords": false, "link": "https://maps.app.goo.gl/w8ed5PS2WDJcACDk9", "nationality": "مصر", "theme": {"bg": "#fee2e2", "border": "#fca5a5", "text": "#b91c1c", "dot": "#f87171"}}, {"name": "شركة الريادة العالمية للسفر و السياحة", "permit": "10011143", "phone": "507444307", "extra": "نجمة | الجامعه | جاهز", "lat": null, "lng": null, "has_coords": false, "link": "https://maps.app.goo.gl/DGJiRRNCeoGjfYXP7", "nationality": "مصر", "theme": {"bg": "#fee2e2", "border": "#fca5a5", "text": "#b91c1c", "dot": "#f87171"}}, {"name": "شركة القمة الذهبية العالمية المحدودة", "permit": "10011873", "phone": "564747393", "extra": "نجمة | العزيزية | جاهز", "lat": null, "lng": null, "has_coords": false, "link": "https://maps.app.goo.gl/qJi5H9D73MhputYW6", "nationality": "مصر", "theme": {"bg": "#fee2e2", "border": "#fca5a5", "text": "#b91c1c", "dot": "#f87171"}}, {"name": "شركة فندق ابراج شركة مكه الفندقية شركة شخص واحد", "permit": "10000983", "phone": "566568999", "extra": "نجمة | الهجلة | جاهز", "lat": null, "lng": null, "has_coords": false, "link": "https://maps.app.goo.gl/N8yHGKC1znQEWd859", "nationality": "مصر", "theme": {"bg": "#fee2e2", "border": "#fca5a5", "text": "#b91c1c", "dot": "#f87171"}}, {"name": "فندق سما المقام الفندقية", "permit": "10008013", "phone": "502444131", "extra": "نجمة | الهجلة -ابراهيم الخليل | جاهز", "lat": null, "lng": null, "has_coords": false, "link": "https://maps.app.goo.gl/13o5QPHiQCzzSheL9", "nationality": "مصر", "theme": {"bg": "#fee2e2", "border": "#fca5a5", "text": "#b91c1c", "dot": "#f87171"}}, {"name": "شركة مواسم الخير للسفر والسياحة", "permit": "10011736", "phone": "565958243", "extra": "نجمة | المرسلات | جاهز", "lat": null, "lng": null, "has_coords": false, "link": "https://maps.app.goo.gl/pQyFCecPEZCbTB7q6", "nationality": "مصر", "theme": {"bg": "#fee2e2", "border": "#fca5a5", "text": "#b91c1c", "dot": "#f87171"}}, {"name": "فندق رفادة واحد الفندقية", "permit": "10011958", "phone": "505557955", "extra": "نجمة | النزهة | جاهز", "lat": null, "lng": null, "has_coords": false, "link": "https://maps.app.goo.gl/5vzE5fPaP6h3bN4u9", "nationality": "مصر", "theme": {"bg": "#fee2e2", "border": "#fca5a5", "text": "#b91c1c", "dot": "#f87171"}}, {"name": "نزل منيب للنزل السياحيه", "permit": "10011606", "phone": "505507211", "extra": "نجمة | النزهة | جاهز", "lat": null, "lng": null, "has_coords": false, "link": "https://maps.app.goo.gl/WY8k6QRRbR5aGHVv7", "nationality": "مصر", "theme": {"bg": "#fee2e2", "border": "#fca5a5", "text": "#b91c1c", "dot": "#f87171"}}, {"name": "شركة مساكن الانوار الذهبية المحدودة", "permit": "10011804", "phone": "583999543", "extra": "عمائر | النزهه | جاهز", "lat": null, "lng": null, "has_coords": false, "link": "https://maps.app.goo.gl/JQD8DQ8nM5okqdDXA", "nationality": "مصر", "theme": {"bg": "#fee2e2", "border": "#fca5a5", "text": "#b91c1c", "dot": "#f87171"}}, {"name": "فندق زمزم بولمان مكة", "permit": "10001442", "phone": "561331406", "extra": "3 نجوم | اجياد | جاهز", "lat": null, "lng": null, "has_coords": false, "link": "https://maps.app.goo.gl/n7bJwVBohCAn6XB36", "nationality": "مصر", "theme": {"bg": "#fee2e2", "border": "#fca5a5", "text": "#b91c1c", "dot": "#f87171"}}, {"name": "فندق الهداية الكبرى الفندقية", "permit": "10009001", "phone": "540550580", "extra": "نجمة | العزيزية | جاهز", "lat": null, "lng": null, "has_coords": false, "link": "https://maps.app.goo.gl/ksFNXM17XyuzNnWS6", "nationality": "مصر", "theme": {"bg": "#fee2e2", "border": "#fca5a5", "text": "#b91c1c", "dot": "#f87171"}}, {"name": "شركة الزائر المتميز لتشغيل الفنادق", "permit": "10008742", "phone": "562974482", "extra": "نجمة | الروابى | جاهز", "lat": null, "lng": null, "has_coords": false, "link": "https://maps.app.goo.gl/F1HiGgYhnMh3NnQm9", "nationality": "مصر", "theme": {"bg": "#fee2e2", "border": "#fca5a5", "text": "#b91c1c", "dot": "#f87171"}}, {"name": "شركة بتول اجياد الفندقية", "permit": "10001395", "phone": "562503695", "extra": "3 نجوم | الروابى | جاهز", "lat": null, "lng": null, "has_coords": false, "link": "https://maps.app.goo.gl/Mo8woov9q8UuJruW9", "nationality": "مصر", "theme": {"bg": "#fee2e2", "border": "#fca5a5", "text": "#b91c1c", "dot": "#f87171"}}, {"name": "شركة الخير المتحدة المحدودة شخص واحد", "permit": "10011769", "phone": "554299594", "extra": "نجمة | الزاهر | جاهز", "lat": null, "lng": null, "has_coords": false, "link": "https://maps.app.goo.gl/1eRRUxjHys62kVjA9", "nationality": "مصر", "theme": {"bg": "#fee2e2", "border": "#fca5a5", "text": "#b91c1c", "dot": "#f87171"}}, {"name": "شركة ميسان الجنوبية الفندقية شخص واحد", "permit": "10008584", "phone": "541699662", "extra": "نجمة | العزيزية | جاهز", "lat": null, "lng": null, "has_coords": false, "link": "https://maps.app.goo.gl/P38haRq7EhE6ePDv9", "nationality": "مصر", "theme": {"bg": "#fee2e2", "border": "#fca5a5", "text": "#b91c1c", "dot": "#f87171"}}, {"name": "مؤسسة ساره محمد بن حسين السعدي للخدمات الطلابية", "permit": "10011874", "phone": "530300000", "extra": "نجمة | الجامعة | جاهز", "lat": null, "lng": null, "has_coords": false, "link": "https://maps.app.goo.gl/6nS2KTwwo5MFAwdN7", "nationality": "مصر", "theme": {"bg": "#fee2e2", "border": "#fca5a5", "text": "#b91c1c", "dot": "#f87171"}}, {"name": "شركة عاطف عبدالقادر عبدالله عبدالقادر للتطوير والاستثمار العقاري شخص واحد", "permit": "10011795", "phone": "538686024", "extra": "نجمة | العزيزية | جاهز", "lat": null, "lng": null, "has_coords": false, "link": "https://maps.app.goo.gl/eWywkrYhPWwmr1vg9", "nationality": "مصر", "theme": {"bg": "#fee2e2", "border": "#fca5a5", "text": "#b91c1c", "dot": "#f87171"}}, {"name": "فندق الكرام الفندقية", "permit": "10002104", "phone": "535051666", "extra": "نجمتين | المرسلات | جاهز", "lat": null, "lng": null, "has_coords": false, "link": "https://maps.app.goo.gl/89oZCqpVy8NCqYMD7", "nationality": "مصر", "theme": {"bg": "#fee2e2", "border": "#fca5a5", "text": "#b91c1c", "dot": "#f87171"}}, {"name": "فندق أبراج الصفوة الفندقية", "permit": "10007681", "phone": "550418111", "extra": "نجمة | أجياد | جاهز", "lat": null, "lng": null, "has_coords": false, "link": "https://maps.app.goo.gl/oEZ5JHNSUYFU7zPU8", "nationality": "مصر", "theme": {"bg": "#fee2e2", "border": "#fca5a5", "text": "#b91c1c", "dot": "#f87171"}}, {"name": "شركة الماسة العالمية للسفر و السياحة", "permit": "10011519", "phone": "548698030", "extra": "نجمة | الروابى | جاهز", "lat": null, "lng": null, "has_coords": false, "link": "https://maps.app.goo.gl/6Uk3ivWkqPjTZtHq9", "nationality": "مصر", "theme": {"bg": "#fee2e2", "border": "#fca5a5", "text": "#b91c1c", "dot": "#f87171"}}, {"name": "فندق اكابر الهجرة الفندقية", "permit": "10007543", "phone": "555242812", "extra": "نجمة | المسفلة | جاهز", "lat": null, "lng": null, "has_coords": false, "link": "https://maps.app.goo.gl/UFYvbmARmnKV95BEA", "nationality": "مصر", "theme": {"bg": "#fee2e2", "border": "#fca5a5", "text": "#b91c1c", "dot": "#f87171"}}, {"name": "مؤسسة أسامه سعد بن حامد سنكى للمقاولات العامة", "permit": "10011444", "phone": "555027909", "extra": "عمائر | المرسلات | جاهز", "lat": null, "lng": null, "has_coords": false, "link": "https://maps.app.goo.gl/njfWmE8EEkG1998D7", "nationality": "مصر", "theme": {"bg": "#fee2e2", "border": "#fca5a5", "text": "#b91c1c", "dot": "#f87171"}}, {"name": "فندق ابراج الريان المكية", "permit": "10008119", "phone": "555701765", "extra": "نجمة | الجامعة | جاهز | بانتظار الموافقه على المسار", "lat": null, "lng": null, "has_coords": false, "link": "https://maps.app.goo.gl/qRsaWSFaftXuLL6U6", "nationality": "مصر", "theme": {"bg": "#fee2e2", "border": "#fca5a5", "text": "#b91c1c", "dot": "#f87171"}}, {"name": "نزل عدنان سعيد الصاعدي للنزل السياحيه", "permit": "10012169", "phone": "540787868", "extra": "نجمة | المرسلات | جاهز", "lat": null, "lng": null, "has_coords": false, "link": "https://maps.app.goo.gl/6oH1D6osMEtjqjfs8", "nationality": "مصر", "theme": {"bg": "#fee2e2", "border": "#fca5a5", "text": "#b91c1c", "dot": "#f87171"}}, {"name": "شقق واحة الإقامة", "permit": "10012645", "phone": "598777707", "extra": "نجمة | العزيزية | جاهز | بانتظار الموافقه على المسار", "lat": null, "lng": null, "has_coords": false, "link": "https://maps.app.goo.gl/sxsniMwib4X7GodU8", "nationality": "مصر", "theme": {"bg": "#fee2e2", "border": "#fca5a5", "text": "#b91c1c", "dot": "#f87171"}}, {"name": "شركة فندق العيسائي للضيافة", "permit": "10007296", "phone": "502903671", "extra": "نجمة | الجامعه | جاهز", "lat": null, "lng": null, "has_coords": false, "link": "https://maps.app.goo.gl/b1682vNmFnQxyW5c9", "nationality": "مصر", "theme": {"bg": "#fee2e2", "border": "#fca5a5", "text": "#b91c1c", "dot": "#f87171"}}, {"name": "فندق النخبة", "permit": "10006490", "phone": "595582903", "extra": "نجمة | الروابي | جاهز", "lat": null, "lng": null, "has_coords": false, "link": "https://maps.app.goo.gl/9ftRQm7uNnWDyvDs6", "nationality": "مصر", "theme": {"bg": "#fee2e2", "border": "#fca5a5", "text": "#b91c1c", "dot": "#f87171"}}, {"name": "فندق قصر العزيزية الفندقية", "permit": "10008149", "phone": "505621576", "extra": "نجمة | العزيزية | جاهز", "lat": null, "lng": null, "has_coords": false, "link": "https://maps.app.goo.gl/DDAGtpqp1MDqfvsU8", "nationality": "مصر", "theme": {"bg": "#fee2e2", "border": "#fca5a5", "text": "#b91c1c", "dot": "#f87171"}}, {"name": "شركة مورو العالمية للشقق والفنادق شركة شخص واحد", "permit": "10011935", "phone": "555560311", "extra": "نجمة | العزيزية | جاهز", "lat": null, "lng": null, "has_coords": false, "link": "https://maps.app.goo.gl/gNu6CVFwr9Nj4Kjw6", "nationality": "مصر", "theme": {"bg": "#fee2e2", "border": "#fca5a5", "text": "#b91c1c", "dot": "#f87171"}}, {"name": "فندق شموخ الماسة الفندقية شخص واحد", "permit": "10009327", "phone": "589145818", "extra": "نجمة | جرول | جاهز", "lat": null, "lng": null, "has_coords": false, "link": "https://maps.app.goo.gl/E4TTYPVD2MkcEat6A", "nationality": "مصر", "theme": {"bg": "#fee2e2", "border": "#fca5a5", "text": "#b91c1c", "dot": "#f87171"}}, {"name": "شركة إعمار مليون المحدودة", "permit": "10011563", "phone": "537002073", "extra": "نجمة | العزيزية | جاهز", "lat": null, "lng": null, "has_coords": false, "link": "https://maps.app.goo.gl/bnjnMvwFTZHLJdSp9", "nationality": "مصر", "theme": {"bg": "#fee2e2", "border": "#fca5a5", "text": "#b91c1c", "dot": "#f87171"}}, {"name": "شركة فندق الراقي المميز الفندقية", "permit": "10010707", "phone": "561593666", "extra": "نجمة | الجامعة | جاهز", "lat": null, "lng": null, "has_coords": false, "link": "https://maps.app.goo.gl/RS7worWLbbneo1PFA?g_st=awb", "nationality": "مصر", "theme": {"bg": "#fee2e2", "border": "#fca5a5", "text": "#b91c1c", "dot": "#f87171"}}, {"name": "مؤسسة الرواد للسياحة", "permit": "10011684", "phone": "560090590", "extra": "نجمة | الجامعه | جاهز", "lat": null, "lng": null, "has_coords": false, "link": "https://maps.app.goo.gl/8cCvSKxPFR9kDUA96", "nationality": "مصر", "theme": {"bg": "#fee2e2", "border": "#fca5a5", "text": "#b91c1c", "dot": "#f87171"}}, {"name": "شركة مساكن الانوار الذهبية المحدودة", "permit": "10011784", "phone": "542410026", "extra": "عمائر | الضيافة | جاهز", "lat": null, "lng": null, "has_coords": false, "link": "https://maps.app.goo.gl/bEtM9yKuvqmfdYN76", "nationality": "مصر", "theme": {"bg": "#fee2e2", "border": "#fca5a5", "text": "#b91c1c", "dot": "#f87171"}}, {"name": "شركة إنفيكتوس كونستراكشن", "permit": "10012089", "phone": "566613225", "extra": "نجمة | العزيزية | جاهز", "lat": null, "lng": null, "has_coords": false, "link": "https://maps.app.goo.gl/NLHRZ1dgP5MLbj2w8", "nationality": "مصر", "theme": {"bg": "#fee2e2", "border": "#fca5a5", "text": "#b91c1c", "dot": "#f87171"}}, {"name": "محمد احمد علي مفتي وعلي احمد علي مفتى (نزل اوتاد الفضيلة)", "permit": "10011496", "phone": "", "extra": "العزيزية | شركة اوتاد الفضيلة | 210", "lat": 21.394787582976697, "lng": 39.879841162643395, "has_coords": true, "link": "https://maps.app.goo.gl/2ERNjzz4xMxNyVdS8", "nationality": "باكستان", "theme": {"bg": "#dcfce7", "border": "#86efac", "text": "#166534", "dot": "#22c55e"}}, {"name": "ورثة : رشيد محمد الرشيد (نزل برج الخير 1)", "permit": "10012642", "phone": "", "extra": "العزيزية | شركة برج الخير لإدارة الأملاك | 543", "lat": 21.396784893680877, "lng": 39.87840924340909, "has_coords": true, "link": "https://maps.app.goo.gl/PRYhhxi1DoJxyB5w9", "nationality": "باكستان", "theme": {"bg": "#dcfce7", "border": "#86efac", "text": "#166534", "dot": "#22c55e"}}, {"name": "ياسر عبدالله تركي العتيبي \n(فندق الفنار)", "permit": "10007713", "phone": "", "extra": "العزيزية | شركة الفنار العزيزية الفندقية | 591", "lat": 21.404252993197485, "lng": 39.862893681904644, "has_coords": true, "link": "https://maps.app.goo.gl/fDPsWsN2D68XLnKPA", "nationality": "باكستان", "theme": {"bg": "#dcfce7", "border": "#86efac", "text": "#166534", "dot": "#22c55e"}}, {"name": "الجمعية : جمعية البر بمكة\n(عمارة رواد الحجاز)", "permit": "10011225", "phone": "", "extra": "العزيزية | مكتب رواد الحجاز الذهبي للخدمات العامة | 266", "lat": 21.40279064110459, "lng": 39.86461920273381, "has_coords": true, "link": "https://maps.app.goo.gl/MS8FMu8Viz8twnp16", "nationality": "باكستان", "theme": {"bg": "#dcfce7", "border": "#86efac", "text": "#166534", "dot": "#22c55e"}}, {"name": "وقف: المفتي الصديقي \n(نزل مؤسسة ضيء المشاعر)", "permit": "10012219", "phone": "", "extra": "العزيزية | مؤسسة ضيء المشاعر | 476", "lat": 21.40290378792204, "lng": 39.86798484360552, "has_coords": true, "link": "https://maps.app.goo.gl/fDMHL2h6PYWAwRii8", "nationality": "باكستان", "theme": {"bg": "#dcfce7", "border": "#86efac", "text": "#166534", "dot": "#22c55e"}}, {"name": "محمد صقر معجب العصيمي\n(نزل تأسيس فن الأعمار1)", "permit": "10012684", "phone": "", "extra": "العزيزية | مؤسسة تأسيس فن الأعمار العقارية | 331", "lat": 21.390378795730264, "lng": 39.877999383949906, "has_coords": true, "link": "https://maps.app.goo.gl/cNQwWE8Dmx39CPmX8", "nationality": "باكستان", "theme": {"bg": "#dcfce7", "border": "#86efac", "text": "#166534", "dot": "#22c55e"}}, {"name": "عادل حسين محمد القرشي", "permit": "10011260", "phone": "", "extra": "العزيزية | نزل عادل حسين القرشي للنزل السياحيه | 472", "lat": 21.396381402343255, "lng": 39.878508143621175, "has_coords": true, "link": "https://maps.app.goo.gl/Jy1X9G7eMEVJDWay9", "nationality": "باكستان", "theme": {"bg": "#dcfce7", "border": "#86efac", "text": "#166534", "dot": "#22c55e"}}, {"name": "عبدالصمد عبدالله عبدالصمد سعداوي \n(نزل ضيافات العالم 1)", "permit": "10011904", "phone": "", "extra": "العزيزية الشمالية\nالمرسلات | شركة ضيافات العالم للإستثمار | 929", "lat": 21.40621345414642, "lng": 39.87305855231929, "has_coords": true, "link": "https://maps.app.goo.gl/qzVVmtuLHWwJUVoQ8", "nationality": "باكستان", "theme": {"bg": "#dcfce7", "border": "#86efac", "text": "#166534", "dot": "#22c55e"}}, {"name": "وقف : محمد بكر اسعد بكر مفتى\n(نزل البركة المكية)", "permit": "10012584", "phone": "", "extra": "العزيزية | مؤسسة بركة المكية لتنظيم الرحلات | 405", "lat": 21.41269973431018, "lng": 39.861607809996215, "has_coords": true, "link": "https://maps.app.goo.gl/bs9D8ZJpBiqPnZXG7", "nationality": "باكستان", "theme": {"bg": "#dcfce7", "border": "#86efac", "text": "#166534", "dot": "#22c55e"}}, {"name": "محسن احمد عبدالله الوجيه\n(نزل جوهرة المقام)", "permit": "10011577", "phone": "", "extra": "العزيزية | مؤسسة عبدالكريم سعيد الزهراني | 434", "lat": 21.411595071952288, "lng": 39.86171757023974, "has_coords": true, "link": "https://maps.app.goo.gl/R7x54CqrRu4kKNTDA", "nationality": "باكستان", "theme": {"bg": "#dcfce7", "border": "#86efac", "text": "#166534", "dot": "#22c55e"}}, {"name": "سامي محمد علي حسب الله\n(فندق إهداء الوسام)", "permit": "10006651", "phone": "", "extra": "العزيزية | فندق إهداء الوسام الفندقية | 928", "lat": 21.404620630968402, "lng": 39.86210290627992, "has_coords": true, "link": "https://maps.app.goo.gl/26TSZjuaE5Lij3wX6", "nationality": "باكستان", "theme": {"bg": "#dcfce7", "border": "#86efac", "text": "#166534", "dot": "#22c55e"}}, {"name": "وقف : احمد عثمان الخالدي\n(نزل شركة حنان المطرفي 2)", "permit": "10011870", "phone": "", "extra": "العزيزية | شركة حنان عيضه جابر المطرفي | 272", "lat": 21.41250862257601, "lng": 39.85970902984779, "has_coords": true, "link": "https://maps.app.goo.gl/rUMLkypqUQeF3YDT8", "nationality": "باكستان", "theme": {"bg": "#dcfce7", "border": "#86efac", "text": "#166534", "dot": "#22c55e"}}, {"name": "صالح وراجي وايمن ابناء حمزه محمود قشلان (نزل صالح قشلان 2)", "permit": "10012053", "phone": "", "extra": "العزيزية | مؤسسة صالح حمزه قشلان | 300", "lat": 21.3975687077108, "lng": 39.86701707116453, "has_coords": true, "link": "https://maps.app.goo.gl/vBNQxRk1x3mNVdgQ8", "nationality": "باكستان", "theme": {"bg": "#dcfce7", "border": "#86efac", "text": "#166534", "dot": "#22c55e"}}, {"name": "شركة مجموعة مرعي بن محفوظ وشركاه (فندق إيليت بريميوم كوليكشن)", "permit": "10012606", "phone": "", "extra": "العزيزية مخطط البنك | مؤسسة إيليت بريميوم كوليكشن | 1089", "lat": 21.386602203158557, "lng": 39.88210259495728, "has_coords": true, "link": "https://maps.app.goo.gl/i5wfYNCoQ2WqJcp6A", "nationality": "باكستان", "theme": {"bg": "#dcfce7", "border": "#86efac", "text": "#166534", "dot": "#22c55e"}}, {"name": "ياسر محمد عيسى بحيري\n(نزل جمعان جارالله الزهراني)", "permit": "10012289", "phone": "", "extra": "العزيزية مخطط البنك | نزل جمعان جارالله الزهراني للنزل السياحية | 247", "lat": 21.38694745394359, "lng": 39.87887888202261, "has_coords": true, "link": "https://maps.app.goo.gl/cZDNz6MW3DqBXyMG7", "nationality": "باكستان", "theme": {"bg": "#dcfce7", "border": "#86efac", "text": "#166534", "dot": "#22c55e"}}, {"name": "وقف: على محمد عبدالله الراجحى (نزل وقف على الراجحي 5 المرور)", "permit": "10012347", "phone": "", "extra": "العزيزية | مؤسسة علي محمد عبدالله الراجحي الوقفية الثالثة | 757", "lat": 21.39685886956524, "lng": 39.86517482558345, "has_coords": true, "link": "https://maps.app.goo.gl/YZc98wqegQY1hTT28", "nationality": "باكستان", "theme": {"bg": "#dcfce7", "border": "#86efac", "text": "#166534", "dot": "#22c55e"}}, {"name": "وقف: علي محمد عبدالله الراجحي\n(نزل وقف علي الراجحي 4 ابن القيم)", "permit": "10012345", "phone": "", "extra": "العزيزية | مؤسسة علي محمد عبدالله الراجحي الوقفية الثانية | 589", "lat": 21.394920479203506, "lng": 39.879783164417724, "has_coords": true, "link": "https://maps.app.goo.gl/TvyuYG8Xhw7NHtcH6", "nationality": "باكستان", "theme": {"bg": "#dcfce7", "border": "#86efac", "text": "#166534", "dot": "#22c55e"}}, {"name": "سليمان عبدالله مخلف المخلف\n(نزل سليمان المخلف 1)", "permit": "10012654", "phone": "", "extra": "العزيزية | مؤسسة سليمان عبدالله المخلف | 606", "lat": 21.391512799785694, "lng": 39.878052796393554, "has_coords": true, "link": "https://maps.app.goo.gl/2ZQXT2M1V1iaxq5A7", "nationality": "باكستان", "theme": {"bg": "#dcfce7", "border": "#86efac", "text": "#166534", "dot": "#22c55e"}}, {"name": "وقف: عبدالقادر عبدالرحمن فطانى", "permit": "10012244", "phone": "", "extra": "العزيزية | شركة أجنحة الخليج الفندقية | 490", "lat": 21.400812778421606, "lng": 39.86366218826829, "has_coords": true, "link": "https://maps.app.goo.gl/StLQ4w9EyHR5yj3TA", "nationality": "باكستان", "theme": {"bg": "#dcfce7", "border": "#86efac", "text": "#166534", "dot": "#22c55e"}}, {"name": "احمد حسن احمد حموده\n(شركة اوتاد الفضيلة)", "permit": "10011567", "phone": "", "extra": "العزيزية | شركة اوتاد الفضيلة | 404", "lat": 21.41110476845601, "lng": 39.863114347391864, "has_coords": true, "link": "https://maps.app.goo.gl/4QiV5ZqC12MJ5RRY6", "nationality": "باكستان", "theme": {"bg": "#dcfce7", "border": "#86efac", "text": "#166534", "dot": "#22c55e"}}, {"name": "وقف: الشريف علي بن لباس بن عبدالمطلب (ضيافة البيت - الركائز)", "permit": "10011287", "phone": "", "extra": "العزيزية | شركة ضيافة البيت | 754", "lat": 21.399035352031774, "lng": 39.8736111, "has_coords": true, "link": "https://maps.app.goo.gl/9KwHXaXVCaDn9cmBA", "nationality": "باكستان", "theme": {"bg": "#dcfce7", "border": "#86efac", "text": "#166534", "dot": "#22c55e"}}, {"name": "محمد عبدالعزيز سعد الحلاف\n(نزل ركن المشاعر الذهبية 4)", "permit": "10012381", "phone": "", "extra": "العزيزية | شركة ركن المشاعر الذهبية للعقارات | 544", "lat": 21.398211942608846, "lng": 39.873645242329076, "has_coords": true, "link": "https://maps.app.goo.gl/6vU113UPnvqpi23T6", "nationality": "باكستان", "theme": {"bg": "#dcfce7", "border": "#86efac", "text": "#166534", "dot": "#22c55e"}}, {"name": "شركة : سليمان عبدالعزيز الراجحي للاستثمارات العقارية (فيليج 1)", "permit": "10012619", "phone": "", "extra": "العزيزية | شركة سنود الفندقية شركة مساهمة مقفلة | 596", "lat": 21.396533087773943, "lng": 39.88086109999999, "has_coords": true, "link": "https://maps.app.goo.gl/ZbnDWJFHN2YnMz6W6", "nationality": "باكستان", "theme": {"bg": "#dcfce7", "border": "#86efac", "text": "#166534", "dot": "#22c55e"}}, {"name": "شركة : سليمان عبدالعزيز الراجحي للاستثمارات العقارية (فيليج 4)", "permit": "10012607", "phone": "", "extra": "العزيزية | شركة سنود الفندقية شركة مساهمة مقفلة | 569", "lat": 21.397080865743092, "lng": 39.881183671164536, "has_coords": true, "link": "https://maps.app.goo.gl/FEzGmkPstzC4tdex9", "nationality": "باكستان", "theme": {"bg": "#dcfce7", "border": "#86efac", "text": "#166534", "dot": "#22c55e"}}, {"name": "ابناء: رشيد محمد الرشيد وزوجتييه وورثة: ابراهيم رشيد محمد الرشيد (نزل برج الخير 8)", "permit": "10012480", "phone": "", "extra": "العزيزية | شركة برج الخير لإدارة الأملاك | 294", "lat": 21.397632443532057, "lng": 39.87870219167723, "has_coords": true, "link": "https://maps.app.goo.gl/cY1vYu64ZbJNXLcd6", "nationality": "باكستان", "theme": {"bg": "#dcfce7", "border": "#86efac", "text": "#166534", "dot": "#22c55e"}}, {"name": "وقف: مبارك محمد باقاسي واخواته \n(نزل أجواء الحطيم 2)", "permit": "10011230", "phone": "", "extra": "العزيزية | شركة اجواء الحطيم الفندقية | 259", "lat": 21.39555854154877, "lng": 39.87925249272187, "has_coords": true, "link": "https://maps.app.goo.gl/ifeWsrPJJVe7cdxz7", "nationality": "باكستان", "theme": {"bg": "#dcfce7", "border": "#86efac", "text": "#166534", "dot": "#22c55e"}}, {"name": "وقف: مبارك محمد باقاسي واخواته \n(نزل أجواء الحطيم 1)", "permit": "10011259", "phone": "", "extra": "العزيزية | شركة اجواء الحطيم الفندقية | 405", "lat": 21.395883161161603, "lng": 39.87943326751373, "has_coords": true, "link": "https://maps.app.goo.gl/k6rqbsgHxmVnGatr9", "nationality": "باكستان", "theme": {"bg": "#dcfce7", "border": "#86efac", "text": "#166534", "dot": "#22c55e"}}, {"name": "وقف : يوسف سالم قطان\n(اصيله الاندلس A&B)", "permit": "10011306", "phone": "", "extra": "العزيزية الشمالية المرسلات | شركة أصيلة الأندلس لتشغيل الفنادق | 1550", "lat": 21.39410287487339, "lng": 39.89456042367029, "has_coords": true, "link": "https://maps.app.goo.gl/EXuhES63jigxKbN29", "nationality": "باكستان", "theme": {"bg": "#dcfce7", "border": "#86efac", "text": "#166534", "dot": "#22c55e"}}, {"name": "وقف: احمد محمد بسيوني\n(نزل لولوة العزيزية 2)", "permit": "10011660", "phone": "", "extra": "العزيزية | نزل محمد عبدالله عايض البقمى | 319", "lat": 21.394243958814318, "lng": 39.87781659213794, "has_coords": true, "link": "https://maps.app.goo.gl/EDoxcPDyvMSChr227", "nationality": "باكستان", "theme": {"bg": "#dcfce7", "border": "#86efac", "text": "#166534", "dot": "#22c55e"}}, {"name": "محمد عبدالله عايض البقمى\n(نزل لولوة العزيزية 1)", "permit": "10011347", "phone": "", "extra": "العزيزية | نزل محمد عبدالله عايض البقمى | 268", "lat": 21.391961228366586, "lng": 39.875737676721464, "has_coords": true, "link": "https://maps.app.goo.gl/85oM6MZLPqfXCVDx8", "nationality": "باكستان", "theme": {"bg": "#dcfce7", "border": "#86efac", "text": "#166534", "dot": "#22c55e"}}, {"name": "وصية: محمد حمد القاسم \n(نزل ودام 2)", "permit": "10012557", "phone": "", "extra": "العزيزية | شركة ودام للخدمات الفندقية | 236", "lat": 21.403411714080246, "lng": 39.86888623896067, "has_coords": true, "link": "https://maps.app.goo.gl/oDcMu413o2haGZUs8", "nationality": "باكستان", "theme": {"bg": "#dcfce7", "border": "#86efac", "text": "#166534", "dot": "#22c55e"}}, {"name": "وقف: صالح عبدالحميد عبدالرحمن مسكي (دار تبارك)", "permit": "10012399", "phone": "", "extra": "العزيزية\nستر اللحياني | نزل وقف صالح بن عبدالرحمن مسكي للإيواء السياحي | 220", "lat": 21.38636054543185, "lng": 39.87244708220885, "has_coords": true, "link": "https://maps.app.goo.gl/Y2GoUJQCxQ3ay8S49", "nationality": "باكستان", "theme": {"bg": "#dcfce7", "border": "#86efac", "text": "#166534", "dot": "#22c55e"}}, {"name": "وقف : ابراهيم عبدالغنى ابراهيم ميره\n(نزل أركان العزيزية)", "permit": "10012532", "phone": "", "extra": "العزيزية | شركة فندق أركان العزيزية للشقق المخدومة شخص واحد | 348", "lat": 21.402641974459886, "lng": 39.86806354084621, "has_coords": true, "link": "https://maps.app.goo.gl/TsFzVwq7UyTJfhC88", "nationality": "باكستان", "theme": {"bg": "#dcfce7", "border": "#86efac", "text": "#166534", "dot": "#22c55e"}}, {"name": "نوره عبدالغني ابراهيم ميره\n(نزل بيسان المتميز)", "permit": "10012509", "phone": "", "extra": "العزيزية | شركة فندق بيسان المتميز للضيافة السياحي شخص واحد | 346", "lat": 21.416665613627096, "lng": 39.85852635466971, "has_coords": true, "link": "https://maps.app.goo.gl/rEGGmLXp9ziDMcSK7", "nationality": "باكستان", "theme": {"bg": "#dcfce7", "border": "#86efac", "text": "#166534", "dot": "#22c55e"}}, {"name": "ورثة : عبدالرحمن عبدالله حماد الحماد\n(فندق سنود العزيزية)", "permit": "10007353", "phone": "", "extra": "العزيزية | فندق سنود العزيزية فرع شركة سنود لادارت الاملاك | 672", "lat": 21.3982199343841, "lng": 39.865835364175126, "has_coords": true, "link": "https://maps.app.goo.gl/i58Nd3ij6D46fR1w5", "nationality": "باكستان", "theme": {"bg": "#dcfce7", "border": "#86efac", "text": "#166534", "dot": "#22c55e"}}, {"name": "وقف: استانقل قوشبكي محمدعباس البخاري (نزل عناية 3)", "permit": "10012603", "phone": "", "extra": "العزيزية\nستر اللحياني | شركة عناية هوتيل مانجمنت المحدودة | 280", "lat": 21.38774368323757, "lng": 39.86926156707686, "has_coords": true, "link": "https://maps.app.goo.gl/4GsRx4RRqHngs2Dw7", "nationality": "باكستان", "theme": {"bg": "#dcfce7", "border": "#86efac", "text": "#166534", "dot": "#22c55e"}}, {"name": "شاكر علي شاكر ابو جمال العبدلي الشريف (فندق شاكر)", "permit": "10011894", "phone": "", "extra": "العزيزية | مطعم البادية زمان لتقديم الوجبات | 544", "lat": 21.395599060639892, "lng": 39.87418170432018, "has_coords": true, "link": "https://maps.app.goo.gl/SXnYw8jKcZ7usE7K6", "nationality": "باكستان", "theme": {"bg": "#dcfce7", "border": "#86efac", "text": "#166534", "dot": "#22c55e"}}, {"name": "وقف: داتو فوجت  (الكوثر)", "permit": "10011790", "phone": "", "extra": "العزيزية | شركة عبدالله محمد القحطاني | 271", "lat": 21.412262114168406, "lng": 39.85964434335123, "has_coords": true, "link": "https://maps.app.goo.gl/4hRUQH4ZtSP6qp4G7", "nationality": "باكستان", "theme": {"bg": "#dcfce7", "border": "#86efac", "text": "#166534", "dot": "#22c55e"}}, {"name": "محمد هاشم فهد الشريف\n(نزل فجر النسك 2)", "permit": "10012685", "phone": "", "extra": "العزيزية | شركة فجر النسك لتشغيل الفنادق | 281", "lat": 21.407426194247435, "lng": 39.863222265181115, "has_coords": true, "link": "https://maps.app.goo.gl/dFETGun6Ng3DpPne8", "nationality": "باكستان", "theme": {"bg": "#dcfce7", "border": "#86efac", "text": "#166534", "dot": "#22c55e"}}, {"name": "وقف : اوقاف علي عمر علي المنديلي\n(نزل ضيافات العالم 2)", "permit": "10012303", "phone": "", "extra": "العزيزية | شركة ضيافات العالم للإستثمار | 390", "lat": 21.39905476708972, "lng": 39.86697229108836, "has_coords": true, "link": "https://maps.app.goo.gl/XUCkG9TA7gXeSAGg9", "nationality": "باكستان", "theme": {"bg": "#dcfce7", "border": "#86efac", "text": "#166534", "dot": "#22c55e"}}, {"name": "سعيد مسفر مفرح القحطاني\n(نزل ضيافات العالم 3)", "permit": "10012561", "phone": "", "extra": "العزيزية | شركة ضيافات العالم للإستثمار | 441", "lat": 21.398069634445307, "lng": 39.877505064212784, "has_coords": true, "link": "https://maps.app.goo.gl/fgS58uvhDmwXRY168", "nationality": "باكستان", "theme": {"bg": "#dcfce7", "border": "#86efac", "text": "#166534", "dot": "#22c55e"}}, {"name": "وقف : خلف حيدر دخيل الله العبدلي\n(فندق رواد الهداية)", "permit": "10007565", "phone": "", "extra": "العزيزية مخطط البنك | شركة رواد الهداية الفندقية | 630", "lat": 21.388189719335347, "lng": 39.87481853851079, "has_coords": true, "link": "https://maps.app.goo.gl/bQrWuZEP3Cfe6zFt5", "nationality": "باكستان", "theme": {"bg": "#dcfce7", "border": "#86efac", "text": "#166534", "dot": "#22c55e"}}, {"name": "وقف: خديجه سالم بهوتى\n(فندق مكان التميز)", "permit": "10010193", "phone": "", "extra": "العزيزية | شركة فندق مكان التميز للضيافة السياحي شخص واحد | 410", "lat": 21.390908444037372, "lng": 39.87324175789873, "has_coords": true, "link": "https://maps.app.goo.gl/JYwNFdNHFoTJPXwu7", "nationality": "باكستان", "theme": {"bg": "#dcfce7", "border": "#86efac", "text": "#166534", "dot": "#22c55e"}}, {"name": "سامي محمد علي حسب الله\n(فندق جوهرة البدائع)", "permit": "10007118", "phone": "", "extra": "العزيزية | فندق جوهرة البدائع الفندقية | 800", "lat": 21.402028474533846, "lng": 39.86319187666056, "has_coords": true, "link": "https://maps.app.goo.gl/zvm3oDEk1FuVWobk6", "nationality": "باكستان", "theme": {"bg": "#dcfce7", "border": "#86efac", "text": "#166534", "dot": "#22c55e"}}, {"name": "على سليمان عبيد العبيد\n(شموخ الحجاز)", "permit": "10012803", "phone": "", "extra": "العزيزية | شركة نجد الشموخ التجارية | 290", "lat": 21.395511402532467, "lng": 39.866296114223864, "has_coords": true, "link": "https://maps.app.goo.gl/EiDKbvQqvXq4eysf8", "nationality": "باكستان", "theme": {"bg": "#dcfce7", "border": "#86efac", "text": "#166534", "dot": "#22c55e"}}, {"name": "زكريا محمد الياس الهندي\n(فندق فاخر العزيزية)", "permit": "10010329", "phone": "", "extra": "العزيزية الشمالية | شركة باب الميزاب المحدودة شخص واحد | 762", "lat": 21.419394006984334, "lng": 39.8589232062117, "has_coords": true, "link": "https://maps.app.goo.gl/eok7Gjr58Qs2PoPt9", "nationality": "باكستان", "theme": {"bg": "#dcfce7", "border": "#86efac", "text": "#166534", "dot": "#22c55e"}}, {"name": "وقف علي الراجحي\n(نزل وقف علي الراجحي العائلة 2)", "permit": "10012217", "phone": "", "extra": "العزيزية | مؤسسة علي محمد عبدالله الراجحي الوقفية الأولى | 384", "lat": 21.399049834043417, "lng": 39.88034403537644, "has_coords": true, "link": "https://maps.app.goo.gl/EBNjNY9NV8bffVmaA", "nationality": "باكستان", "theme": {"bg": "#dcfce7", "border": "#86efac", "text": "#166534", "dot": "#22c55e"}}, {"name": "وقف علي الراجحي\n(نزل وقف علي الراجحي العائلة 1)", "permit": "10012218", "phone": "", "extra": "العزيزية | مؤسسة علي محمد عبدالله الراجحي الوقفية الأولى | 372", "lat": 21.39910974211163, "lng": 39.880191128630976, "has_coords": true, "link": "https://maps.app.goo.gl/cpbF45fbzArUAm7z5", "nationality": "باكستان", "theme": {"bg": "#dcfce7", "border": "#86efac", "text": "#166534", "dot": "#22c55e"}}, {"name": "جميل عبد الله حسن طلاقي \n(فندق درة الجوار)", "permit": "10010091", "phone": "", "extra": "العزيزية | فندق درة الجوار الفندقية شخص واحد | 730", "lat": 21.41527927498035, "lng": 39.85674025752563, "has_coords": true, "link": "https://maps.app.goo.gl/yhPtQTQik8LsWnp76", "nationality": "باكستان", "theme": {"bg": "#dcfce7", "border": "#86efac", "text": "#166534", "dot": "#22c55e"}}, {"name": "وقف: محمد زين العابدين الشيبي\n(فندق اثير المشاعر المتميزة)", "permit": "10009296", "phone": "", "extra": "العزيزية | شركة أثير المشاعر المتميزة التجارية شركة شخص واحد | 962", "lat": 21.39925818433468, "lng": 39.87781920906058, "has_coords": true, "link": "https://maps.app.goo.gl/yv5iq7cMmn5qrbT78", "nationality": "باكستان", "theme": {"bg": "#dcfce7", "border": "#86efac", "text": "#166534", "dot": "#22c55e"}}, {"name": "وقف: سليمان عبدالله باتوباره", "permit": "10012099", "phone": "", "extra": "العزيزية | مؤسسة منصور وصل الله الثبيتي | 325", "lat": 21.39912097087359, "lng": 39.87389262690765, "has_coords": true, "link": "https://maps.app.goo.gl/5ZSwoT9ostnR5QX37", "nationality": "باكستان", "theme": {"bg": "#dcfce7", "border": "#86efac", "text": "#166534", "dot": "#22c55e"}}, {"name": "ورثة: محمد سليمان عبدالعزيز البسام", "permit": "10012287", "phone": "", "extra": "العزيزية | مؤسسة منصور وصل الله الثبيتي | 353", "lat": 21.399279987837136, "lng": 39.87297787954442, "has_coords": true, "link": "https://maps.app.goo.gl/LTgrA2W3T7YVk6xd9", "nationality": "باكستان", "theme": {"bg": "#dcfce7", "border": "#86efac", "text": "#166534", "dot": "#22c55e"}}, {"name": "حسن جميل عبدالغني ثقه\n(دار المشاعرالاولى 1)", "permit": "10011776", "phone": "", "extra": "العزيزية | شركة دار المشاعرالاولى المحدودة | 479", "lat": 21.407689730139875, "lng": 39.862259267667184, "has_coords": true, "link": "https://maps.app.goo.gl/7DnVRBcT69LvPH7r6", "nationality": "باكستان", "theme": {"bg": "#dcfce7", "border": "#86efac", "text": "#166534", "dot": "#22c55e"}}, {"name": "خالد صالح عبدالله السلطان \n(دار المشاعرالاولى 2)", "permit": "10011282", "phone": "", "extra": "العزيزية | شركة دار المشاعرالاولى المحدودة | 482", "lat": 21.400517538828304, "lng": 39.87421781349362, "has_coords": true, "link": "https://maps.app.goo.gl/DJLnknant9fxwLks9", "nationality": "باكستان", "theme": {"bg": "#dcfce7", "border": "#86efac", "text": "#166534", "dot": "#22c55e"}}, {"name": "خالد صالح عبدالله السلطان \n(دار المشاعر الاولى 3)", "permit": "10011341", "phone": "", "extra": "العزيزية | شركة دار المشاعر الاولى المحدودة | 427", "lat": 21.393860712891883, "lng": 39.87609261008257, "has_coords": true, "link": "https://maps.app.goo.gl/zMHDiXixjB9P7azK6", "nationality": "باكستان", "theme": {"bg": "#dcfce7", "border": "#86efac", "text": "#166534", "dot": "#22c55e"}}, {"name": "مؤسسة وقف عبدالقادر أحمد نصير الوقفيه", "permit": "10009314", "phone": "", "extra": "العزيزية | شركة  دار المشاعر الأولى المحدودة | 379", "lat": 21.39306089251754, "lng": 39.88028852883546, "has_coords": true, "link": "https://maps.app.goo.gl/ySCXDWp3xGtg71qG7", "nationality": "باكستان", "theme": {"bg": "#dcfce7", "border": "#86efac", "text": "#166534", "dot": "#22c55e"}}, {"name": "وقف: اوقاف الشريف ال غالب\n(نزل شركة عبدالعزيز 5)", "permit": "10011934", "phone": "", "extra": "العزيزية | شركة عبدالعزيز سهيل الغامدي | 814", "lat": 21.40970592864718, "lng": 39.862976868063626, "has_coords": true, "link": "https://maps.app.goo.gl/hfSrjzj3UjdYVQpv8", "nationality": "باكستان", "theme": {"bg": "#dcfce7", "border": "#86efac", "text": "#166534", "dot": "#22c55e"}}, {"name": "محمد عوض عايض الجعيد\n(روضة التوحيد رقم 2)", "permit": "10011592", "phone": "", "extra": "العزيزية\nستر اللحياني | فندق روضة التوحيد الفندقية | 242", "lat": 21.385666272627905, "lng": 39.87121857119138, "has_coords": true, "link": "https://maps.app.goo.gl/8n5iDvN2brvLEQAF7", "nationality": "باكستان", "theme": {"bg": "#dcfce7", "border": "#86efac", "text": "#166534", "dot": "#22c55e"}}, {"name": "محمد عوض عايض الجعيد\n(روضة التوحيد رقم 1)", "permit": "10011593", "phone": "", "extra": "العزيزية\nستر اللحياني | فندق روضة التوحيد الفندقية | 207", "lat": 21.38565767167788, "lng": 39.870961471164534, "has_coords": true, "link": "https://maps.app.goo.gl/HBMJHwXKBMtix5Jf9", "nationality": "باكستان", "theme": {"bg": "#dcfce7", "border": "#86efac", "text": "#166534", "dot": "#22c55e"}}, {"name": "وقف: علوي صالح حداوى \n(ضيافة البيت - سلطان)", "permit": "10011378", "phone": "", "extra": "العزيزية | شركة ضيافة البيت | 509", "lat": 21.399083030404938, "lng": 39.87428414232908, "has_coords": true, "link": "https://maps.app.goo.gl/KgvhdLps8eQYZju96", "nationality": "باكستان", "theme": {"bg": "#dcfce7", "border": "#86efac", "text": "#166534", "dot": "#22c55e"}}, {"name": "وقف : عبيدالله محمد زمان السليماني", "permit": "10011600", "phone": "", "extra": "العزيزية | شركة ضيافة البيت | 252", "lat": 21.398348001084596, "lng": 39.872351874514536, "has_coords": true, "link": "https://maps.app.goo.gl/pJ3kiwDe5QVhLAGKA", "nationality": "باكستان", "theme": {"bg": "#dcfce7", "border": "#86efac", "text": "#166534", "dot": "#22c55e"}}, {"name": "سليمان محمد صالح السيف\n(فندق سيف بلص)", "permit": "10007161", "phone": "", "extra": "العزيزية | فندق سيف بلص الفندقية | 320", "lat": 21.406288805417503, "lng": 39.861066820411686, "has_coords": true, "link": "https://maps.app.goo.gl/qh3wXo9UAUfrXa5Y9", "nationality": "باكستان", "theme": {"bg": "#dcfce7", "border": "#86efac", "text": "#166534", "dot": "#22c55e"}}, {"name": "محمد عبدالعزيز سعد الحلاف\n(نزل ركن المشاعر الذهبية 7)", "permit": "10012430", "phone": "", "extra": "العزيزية | شركة ركن المشاعر الذهبية للعقارات | 468", "lat": 21.39843414224453, "lng": 39.873155971164536, "has_coords": true, "link": "https://maps.app.goo.gl/PLErSpZpPBBbehYVA", "nationality": "باكستان", "theme": {"bg": "#dcfce7", "border": "#86efac", "text": "#166534", "dot": "#22c55e"}}, {"name": "محمد عبدالعزيز سعد الحلاف\n(نزل ركن المشاعر الذهبية 6)", "permit": "10012406", "phone": "", "extra": "العزيزية | شركة ركن المشاعر الذهبية للعقارات | 498", "lat": 21.39815417484413, "lng": 39.87301072883546, "has_coords": true, "link": "https://maps.app.goo.gl/aPfpgNWtKCc72JkW6", "nationality": "باكستان", "theme": {"bg": "#dcfce7", "border": "#86efac", "text": "#166534", "dot": "#22c55e"}}, {"name": "محمد عبدالعزيز سعد الحلاف\n(نزل ركن المشاعر الذهبية 5)", "permit": "10012390", "phone": "", "extra": "العزيزية | شركة ركن المشاعر الذهبية للعقارات | 578", "lat": 21.397903170879978, "lng": 39.87352211351651, "has_coords": true, "link": "https://maps.app.goo.gl/NDP3x4opXdvTijnS7", "nationality": "باكستان", "theme": {"bg": "#dcfce7", "border": "#86efac", "text": "#166534", "dot": "#22c55e"}}, {"name": "محمد عبدالعزيز سعد الحلاف\n(نزل ركن المشاعر الذهبية 2)", "permit": "10012383", "phone": "", "extra": "العزيزية | شركة ركن المشاعر الذهبية للعقارات | 500", "lat": 21.39400357588317, "lng": 39.879097448037676, "has_coords": true, "link": "https://maps.app.goo.gl/n8mmBXwpT5VpvBXq7", "nationality": "باكستان", "theme": {"bg": "#dcfce7", "border": "#86efac", "text": "#166534", "dot": "#22c55e"}}, {"name": "محمد عبدالعزيز سعد الحلاف\n(نزل ركن المشاعر الذهبية 3)", "permit": "10012405", "phone": "", "extra": "العزيزية | شركة ركن المشاعر الذهبية للعقارات | 454", "lat": 21.39273975158023, "lng": 39.8778611, "has_coords": true, "link": "https://maps.app.goo.gl/mH72MUHkf19DswBa9", "nationality": "باكستان", "theme": {"bg": "#dcfce7", "border": "#86efac", "text": "#166534", "dot": "#22c55e"}}, {"name": "محمد عبدالعزيز سعد الحلاف\n(نزل ركن المشاعر الذهبية 1)", "permit": "10012444", "phone": "", "extra": "العزيزية | شركة ركن المشاعر الذهبية للعقارات | 509", "lat": 21.39514763731231, "lng": 39.87989163352192, "has_coords": true, "link": "https://maps.app.goo.gl/jceN8w4Paka3CDba6", "nationality": "باكستان", "theme": {"bg": "#dcfce7", "border": "#86efac", "text": "#166534", "dot": "#22c55e"}}, {"name": "وقف: شعبان واسماعيل البنتن وعبدالكريم الجاوى (السلام عزيزية)", "permit": "10011286", "phone": "", "extra": "العزيزية | مؤسسة محمد أحمد علي العسيري للصيانة والنظافة | 326", "lat": 21.399704118526735, "lng": 39.872433671164536, "has_coords": true, "link": "https://maps.app.goo.gl/d1QFKvYnoG85mfwaA", "nationality": "باكستان", "theme": {"bg": "#dcfce7", "border": "#86efac", "text": "#166534", "dot": "#22c55e"}}, {"name": "عبدالعزيز عبدربه محيسن الحازمى \n(دانة العزيزية)", "permit": "10011759", "phone": "", "extra": "العزيزية | مؤسسة محمد أحمد علي العسيري للصيانة والنظافة | 290", "lat": 21.399201951769985, "lng": 39.87329487116454, "has_coords": true, "link": "https://maps.app.goo.gl/FWdG2ZQSfhFYTiMc7", "nationality": "باكستان", "theme": {"bg": "#dcfce7", "border": "#86efac", "text": "#166534", "dot": "#22c55e"}}, {"name": "صالح وصل زهيميل السلمي\n(فندق الرحابة المكية )", "permit": "10001780", "phone": "", "extra": "العزيزية | فندق الرحابة المكية لصاحبها صالح وصل السلمي | 502", "lat": 21.393075250693588, "lng": 39.87032871889966, "has_coords": true, "link": "https://maps.app.goo.gl/p9xAkKQNiNzicbcF8", "nationality": "باكستان", "theme": {"bg": "#dcfce7", "border": "#86efac", "text": "#166534", "dot": "#22c55e"}}, {"name": "عمر عبدالله عبدالرحيم قاضي\n(فندق زاد الصفا)", "permit": "10011596", "phone": "", "extra": "العزيزية | مؤسسة زاد الصفا الفندقية | 282", "lat": 21.40563242134684, "lng": 39.86489463924352, "has_coords": true, "link": "https://maps.app.goo.gl/gKCy89DJyskcHya68", "nationality": "باكستان", "theme": {"bg": "#dcfce7", "border": "#86efac", "text": "#166534", "dot": "#22c55e"}}, {"name": "محمد سعد عبدالعزيز داود\n(فندق زاد المشاعر)", "permit": "10011883", "phone": "", "extra": "العزيزية | مؤسسة زاد المشاعر لتشغيل الفنادق | 472", "lat": 21.389512928751135, "lng": 39.87379615216282, "has_coords": true, "link": "https://maps.app.goo.gl/CGThuYykBXUiEBve6", "nationality": "باكستان", "theme": {"bg": "#dcfce7", "border": "#86efac", "text": "#166534", "dot": "#22c55e"}}, {"name": "وقف: محمد عبدالرحمن كوشك (نزل شركة عبدالعزيز 7)", "permit": "10012502", "phone": "", "extra": "العزيزية | شركة عبدالعزيز سهيل الغامدي | 430", "lat": 21.412729722550253, "lng": 39.862809995876155, "has_coords": true, "link": "https://maps.app.goo.gl/TTXu5nkGdCCZhtD2A", "nationality": "باكستان", "theme": {"bg": "#dcfce7", "border": "#86efac", "text": "#166534", "dot": "#22c55e"}}, {"name": "وقف: محمد عبدالرحمن كوشك (نزل شركة عبدالعزيز 8)", "permit": "10012432", "phone": "", "extra": "العزيزية | شركة عبدالعزيز سهيل الغامدي | 334", "lat": 21.412619687611613, "lng": 39.86259145354703, "has_coords": true, "link": "https://maps.app.goo.gl/MZkEu2xNPyKqsEzdA", "nationality": "باكستان", "theme": {"bg": "#dcfce7", "border": "#86efac", "text": "#166534", "dot": "#22c55e"}}, {"name": "محمد عبدالرحمن كوشك (نزل شركة عبدالعزيز 6)", "permit": "10011881", "phone": "", "extra": "العزيزية | مؤسسة عبدالعزيز سهيل الغامدي | 394", "lat": 21.410539014557806, "lng": 39.863950415699776, "has_coords": true, "link": "https://maps.app.goo.gl/Nrgq93F1kD3rp7Si6", "nationality": "باكستان", "theme": {"bg": "#dcfce7", "border": "#86efac", "text": "#166534", "dot": "#22c55e"}}, {"name": "شركة : سليمان عبدالعزيز الراجحي للاستثمارات العقارية (فيليج 8)", "permit": "10012629", "phone": "", "extra": "العزيزية | شركة سنود الفندقية شركة مساهمة مقفلة | 468", "lat": 21.396914165993625, "lng": 39.881916700000005, "has_coords": true, "link": "https://maps.app.goo.gl/bvxwJsPkxxEheyh29", "nationality": "باكستان", "theme": {"bg": "#dcfce7", "border": "#86efac", "text": "#166534", "dot": "#22c55e"}}, {"name": "شركة : سليمان عبدالعزيز الراجحي للاستثمارات العقارية (فيليج 10)", "permit": "10012636", "phone": "", "extra": "العزيزية | شركة سنود الفندقية شركة مساهمة مقفلة | 468", "lat": 21.3965075560037, "lng": 39.8817222, "has_coords": true, "link": "https://maps.app.goo.gl/uuLKYuScMitb7LTVA", "nationality": "باكستان", "theme": {"bg": "#dcfce7", "border": "#86efac", "text": "#166534", "dot": "#22c55e"}}, {"name": "ورثة : رشيد محمد الرشيد (نزل برج الخير 5)", "permit": "10012551", "phone": "", "extra": "العزيزية | شركة برج الخير لإدارة الأملاك | 541", "lat": 21.396913214869112, "lng": 39.87788353558227, "has_coords": true, "link": "https://maps.app.goo.gl/ZEkQmifCk39RZaxe7", "nationality": "باكستان", "theme": {"bg": "#dcfce7", "border": "#86efac", "text": "#166534", "dot": "#22c55e"}}, {"name": "ورثة : رشيد محمد الرشيد (نزل برج الخير 4)", "permit": "10012434", "phone": "", "extra": "العزيزية | شركة برج الخير لإدارة الأملاك | 541", "lat": 21.39689510009636, "lng": 39.878048450918946, "has_coords": true, "link": "https://maps.app.goo.gl/CegUwBBNsoezziVJ8", "nationality": "باكستان", "theme": {"bg": "#dcfce7", "border": "#86efac", "text": "#166534", "dot": "#22c55e"}}, {"name": "ورثة : رشيد محمد الرشيد (نزل برج الخير 2)", "permit": "10012479", "phone": "", "extra": "العزيزية | شركة برج الخير لإدارة الأملاك | 541", "lat": 21.396906444749362, "lng": 39.87821147116453, "has_coords": true, "link": "https://maps.app.goo.gl/wLFAaxRExxyLtHnA9", "nationality": "باكستان", "theme": {"bg": "#dcfce7", "border": "#86efac", "text": "#166534", "dot": "#22c55e"}}, {"name": "ورثة : رشيد محمد الرشيد (نزل برج الخير 7)", "permit": "10012559", "phone": "", "extra": "العزيزية | شركة برج الخير لإدارة الأملاك | 359", "lat": 21.397477586483472, "lng": 39.879027799999996, "has_coords": true, "link": "https://maps.app.goo.gl/oefESAbH6Het5uDr5", "nationality": "باكستان", "theme": {"bg": "#dcfce7", "border": "#86efac", "text": "#166534", "dot": "#22c55e"}}, {"name": "وقف: زكريا عبدالله محمد زامل\n(نزل الزامل 2)", "permit": "10012022", "phone": "", "extra": "العزيزية\nستر اللحياني | شركة زكريا زامل | 332", "lat": 21.387456127878867, "lng": 39.8721386105123, "has_coords": true, "link": "https://maps.app.goo.gl/2UNWtVJrzi7QZw8b6", "nationality": "باكستان", "theme": {"bg": "#dcfce7", "border": "#86efac", "text": "#166534", "dot": "#22c55e"}}, {"name": "وقف: عبدالله محمد زامل\n(نزل الزامل 1)", "permit": "10012257", "phone": "", "extra": "العزيزية\nستر اللحياني | شركة فلق الأصالة | 257", "lat": 21.386895967216304, "lng": 39.872193668216504, "has_coords": true, "link": "https://maps.app.goo.gl/cdxbTBuhGL1fcEUR6", "nationality": "باكستان", "theme": {"bg": "#dcfce7", "border": "#86efac", "text": "#166534", "dot": "#22c55e"}}, {"name": "ورثة : صالحه محمد خليل عمر سبحي\n(صالحيه)", "permit": "10011564", "phone": "", "extra": "العزيزية | مؤسسة خالد محمود صالح قطان | 266", "lat": 21.40489267136812, "lng": 39.863083300000014, "has_coords": true, "link": "https://maps.app.goo.gl/gomc84QRzBNFz8r17", "nationality": "باكستان", "theme": {"bg": "#dcfce7", "border": "#86efac", "text": "#166534", "dot": "#22c55e"}}, {"name": "ورثة : احمد سعيد عبدالله الغامدي", "permit": "10011743", "phone": "", "extra": "العزيزية | مؤسسة المعيار المثالي للصيانة والنظافة | 358", "lat": 21.398344871601363, "lng": 39.86644390569259, "has_coords": true, "link": "https://maps.app.goo.gl/eRj27xKLeL693hF48", "nationality": "باكستان", "theme": {"bg": "#dcfce7", "border": "#86efac", "text": "#166534", "dot": "#22c55e"}}, {"name": "وقف: آل حميدان (نزل الهدايه الكبرى 7 صروح العلاء 3)", "permit": "10011937", "phone": "", "extra": "العزيزية | فندق الهداية الكبرى الفندقية | 384", "lat": 21.396629746857542, "lng": 39.876690724766235, "has_coords": true, "link": "https://maps.app.goo.gl/eg88gZdGCs3o9USM9", "nationality": "باكستان", "theme": {"bg": "#dcfce7", "border": "#86efac", "text": "#166534", "dot": "#22c55e"}}, {"name": "وقف: آل حميدان (نزل الهدايه الكبرى 8 صروح العلاء 3)", "permit": "10012123", "phone": "", "extra": "العزيزية | فندق الهداية الكبرى الفندقية | 384", "lat": 21.39675977852082, "lng": 39.8767699959297, "has_coords": true, "link": "https://maps.app.goo.gl/vg2T59scpwPZL7K67", "nationality": "باكستان", "theme": {"bg": "#dcfce7", "border": "#86efac", "text": "#166534", "dot": "#22c55e"}}, {"name": "وقف: آل حميدان (نزل الهدايه الكبرى 6 صروح العلاء 3)", "permit": "10012121", "phone": "", "extra": "العزيزية | فندق الهداية الكبرى الفندقية | 384", "lat": 21.39692974640645, "lng": 39.87689145360277, "has_coords": true, "link": "https://maps.app.goo.gl/wgMDXQWJJ6EPzZru8", "nationality": "باكستان", "theme": {"bg": "#dcfce7", "border": "#86efac", "text": "#166534", "dot": "#22c55e"}}, {"name": "نجيد صالح محمد النجيدى\n(فندق نور)", "permit": "10011712", "phone": "", "extra": "العزيزية | مؤسسة قبة نجد لصاحبها نجيد صالح محمد النجيدي | 251", "lat": 21.40458141879067, "lng": 39.86395909796304, "has_coords": true, "link": "https://maps.app.goo.gl/7wszLF4B3qRPiAw97?g_st=ic", "nationality": "باكستان", "theme": {"bg": "#dcfce7", "border": "#86efac", "text": "#166534", "dot": "#22c55e"}}, {"name": "وصية: محمد حمد القاسم \n(نزل ودام العزيزية 1)", "permit": "10012492", "phone": "", "extra": "العزيزية | نزل ودام العزيزية واحد | 284", "lat": 21.403667755846993, "lng": 39.868531573220594, "has_coords": true, "link": "https://maps.app.goo.gl/oDcMu413o2haGZUs8", "nationality": "باكستان", "theme": {"bg": "#dcfce7", "border": "#86efac", "text": "#166534", "dot": "#22c55e"}}, {"name": "ورثة: خالد مطر سراج القرشي\n(نزل اجيال 1)", "permit": "10012533", "phone": "", "extra": "العزيزية\nستر اللحياني | معرض الاجيال للسيارات | 283", "lat": 21.38803522191933, "lng": 39.87199707286601, "has_coords": true, "link": "https://maps.app.goo.gl/EaSqt7usBtpo563fA", "nationality": "باكستان", "theme": {"bg": "#dcfce7", "border": "#86efac", "text": "#166534", "dot": "#22c55e"}}, {"name": "عبدالصمد عبدالله عبدالصمد سعداوي (نزل ميار وميرنا)", "permit": "10012494", "phone": "", "extra": "العزيزية | شركة ميار وميرنا | 302", "lat": 21.39913975378137, "lng": 39.867950725337835, "has_coords": true, "link": "https://maps.app.goo.gl/FB7wEPWkSF6zqw4UA", "nationality": "باكستان", "theme": {"bg": "#dcfce7", "border": "#86efac", "text": "#166534", "dot": "#22c55e"}}, {"name": "ابناء: حبيب الرحمن عبدالقهار خوجه \n(نزل مبنى الدار البيضاء 2)", "permit": "10012456", "phone": "", "extra": "العزيزية\nستر اللحياني | مؤسسة مبنى الدار البيضاء | 190", "lat": 21.38591048495252, "lng": 39.872553647561006, "has_coords": true, "link": "https://maps.app.goo.gl/ewsTySWPmrbZbnrY7", "nationality": "باكستان", "theme": {"bg": "#dcfce7", "border": "#86efac", "text": "#166534", "dot": "#22c55e"}}, {"name": "وقف: اسماعيل مصيري\n(ضيافة الوسام 5)", "permit": "10011291", "phone": "", "extra": "العزيزية | شركة ضيافة الوسام الماسي | 472", "lat": 21.389538747970892, "lng": 39.87597220000001, "has_coords": true, "link": "https://maps.app.goo.gl/iy6gHebiNsQHzZmG8", "nationality": "باكستان", "theme": {"bg": "#dcfce7", "border": "#86efac", "text": "#166534", "dot": "#22c55e"}}, {"name": "وقف: فاطمه زهره عبدالحميد\n(نجمة اسراء الذهبية 5)", "permit": "10011411", "phone": "", "extra": "العزيزية | شركة نجمة اسراء الذهبي للخدمات الفندقية | 460", "lat": 21.411463295131416, "lng": 39.86221953122299, "has_coords": true, "link": "https://maps.app.goo.gl/cs7YvacJiE2mySXv6", "nationality": "باكستان", "theme": {"bg": "#dcfce7", "border": "#86efac", "text": "#166534", "dot": "#22c55e"}}, {"name": "وقف : محمد صالح العضيب\n(فندق اخيار المهاد)", "permit": "10011140", "phone": "", "extra": "العزيزية الشمالية المرسلات | شركة أخيار المحبس الفندقية | 1652", "lat": 21.393583961607348, "lng": 39.89536072946035, "has_coords": true, "link": "https://maps.app.goo.gl/fZ2NL8Tpimfv6Qbd7", "nationality": "باكستان", "theme": {"bg": "#dcfce7", "border": "#86efac", "text": "#166534", "dot": "#22c55e"}}, {"name": "وقف: على عبدالعال سالم المصرى\n(فندق السنابل الذهبية 2)", "permit": "10009603", "phone": "", "extra": "العزيزية | فندق السنابل الذهبية اثنين للخدمات الفندقيه | 517", "lat": 21.393583961607348, "lng": 39.89536072946035, "has_coords": true, "link": "https://maps.app.goo.gl/fZ2NL8Tpimfv6Qbd7", "nationality": "باكستان", "theme": {"bg": "#dcfce7", "border": "#86efac", "text": "#166534", "dot": "#22c55e"}}, {"name": "ورثة : حماد حميد سلامه العوفي الحربي (فندق ريمان الخير)", "permit": "10012518", "phone": "", "extra": "العزيزية | فندق ريمان الخير الفندقية | 326", "lat": 21.39030858166581, "lng": 39.87772970135633, "has_coords": true, "link": "https://maps.app.goo.gl/bs76GMafoNdkBVKM9", "nationality": "باكستان", "theme": {"bg": "#dcfce7", "border": "#86efac", "text": "#166534", "dot": "#22c55e"}}, {"name": "سارة عايض بن شديد العبود", "permit": "10012824", "phone": "", "extra": "العزيزية | مكتب الهدف والإبداع لإدارة الأملاك | 191", "lat": 21.391031452529344, "lng": 39.876580493458306, "has_coords": true, "link": "https://maps.app.goo.gl/KUSD75NLEgBagv8k7", "nationality": "باكستان", "theme": {"bg": "#dcfce7", "border": "#86efac", "text": "#166534", "dot": "#22c55e"}}, {"name": "وقف : الشيخ خليفه احمد ال ثاني\n(فندق فيصل الصفوة)", "permit": "10008815", "phone": "", "extra": "العزيزية حارة العصيمي | فندق فيصل الصفوة الفندقية | 391", "lat": 21.416930130016752, "lng": 39.85363134419363, "has_coords": true, "link": "https://maps.app.goo.gl/CCXDW7B9sW5qNB2t7", "nationality": "باكستان", "theme": {"bg": "#dcfce7", "border": "#86efac", "text": "#166534", "dot": "#22c55e"}}, {"name": "صلاح خضر مطلق العصيمي\n(نزل افواج البيت 2)", "permit": "10012736", "phone": "", "extra": "النسيم | مؤسسة افواج البيت لخدمات المعتمرين | 212", "lat": 21.370839647816627, "lng": 39.877830499794534, "has_coords": true, "link": "https://maps.app.goo.gl/pLnYnxGLct9pViAa6", "nationality": "باكستان", "theme": {"bg": "#dcfce7", "border": "#86efac", "text": "#166534", "dot": "#22c55e"}}, {"name": "مروان وعبدالله وامل واسرار سعد الطويرقي (فندق شعاع النزهة)", "permit": "10010189", "phone": "", "extra": "النزهة | فندق شعاع النزهة الفندقية | 1592", "lat": 21.435564778244565, "lng": 39.7969896090671, "has_coords": true, "link": "https://maps.app.goo.gl/uCyCySiiZZMWzZx2A", "nationality": "باكستان", "theme": {"bg": "#dcfce7", "border": "#86efac", "text": "#166534", "dot": "#22c55e"}}, {"name": "شركة مبارك العالمية للتجارة والاستثمار العقاري المحدودة (فندق بياب العزيزية)", "permit": "10001309", "phone": "", "extra": "العزيزية | فندق بياب العزيزية الفندقية | 426", "lat": 21.395064531624964, "lng": 39.87711040398895, "has_coords": true, "link": "https://maps.app.goo.gl/TnjPA41tQR6teBV19", "nationality": "باكستان", "theme": {"bg": "#dcfce7", "border": "#86efac", "text": "#166534", "dot": "#22c55e"}}, {"name": "ورثة عبدالقادر ازهر\n(فندق الازهر الماسي)", "permit": "10009758", "phone": "", "extra": "النزهة | فندق الازهر الماسي الفندقيه | 520", "lat": 21.433511121240535, "lng": 39.79927792446596, "has_coords": true, "link": "https://maps.app.goo.gl/FXFz9iDCDvUzBWhH8", "nationality": "باكستان", "theme": {"bg": "#dcfce7", "border": "#86efac", "text": "#166534", "dot": "#22c55e"}}, {"name": "ورثة عبدالقادر ازهر\n(فندق قصر الازهر)", "permit": "10001527", "phone": "", "extra": "النزهة | فندق قصر الازهر الفندقيه | 800", "lat": 21.436741919035526, "lng": 39.7944948635335, "has_coords": true, "link": "https://maps.app.goo.gl/nKqP6Yy9UWa8GqXz6", "nationality": "باكستان", "theme": {"bg": "#dcfce7", "border": "#86efac", "text": "#166534", "dot": "#22c55e"}}, {"name": "عماد عبدالرحمن علي حجازي\n(نزل رابية الحجاز)", "permit": "10012912", "phone": "", "extra": "العزيزية | مؤسسة سلطان حميدان الساعدي التجارية | 446", "lat": 21.407186662158292, "lng": 39.86096021857925, "has_coords": true, "link": "https://maps.app.goo.gl/fb1NCjT4GgYNZNZ99", "nationality": "باكستان", "theme": {"bg": "#dcfce7", "border": "#86efac", "text": "#166534", "dot": "#22c55e"}}, {"name": "صالح فارس محمد الزهراني\n(نزل المها تاور)", "permit": "10012491", "phone": "", "extra": "العزيزية | فندق المها تاور للخدمات الفندقيه | 524", "lat": 21.392518763849836, "lng": 39.87194471857926, "has_coords": true, "link": "https://maps.app.goo.gl/YJW54E6rP8r5881MA", "nationality": "باكستان", "theme": {"bg": "#dcfce7", "border": "#86efac", "text": "#166534", "dot": "#22c55e"}}, {"name": "وقف: الشريف محمد ابى نمى الثانى \n(فندق منازل العين برج A&B)", "permit": "10010871", "phone": "", "extra": "اجياد ربيع بخش | شركة منازل العين كوما التجارية قابضة | 2405", "lat": 21.407567773106642, "lng": 39.82978508012436, "has_coords": true, "link": "https://maps.app.goo.gl/zDdrpsJcbnMSKQzC7", "nationality": "باكستان", "theme": {"bg": "#dcfce7", "border": "#86efac", "text": "#166534", "dot": "#22c55e"}}, {"name": "وقف : ابراهيم صدقي محمد سعيد افندي (نزل شهاب الرائج)", "permit": "10012366", "phone": "", "extra": "العزيزية مخطط البنك | شركة الشهاب الرائج | 338", "lat": 21.386936846477266, "lng": 39.87922489981351, "has_coords": true, "link": "https://maps.app.goo.gl/z7LEvrZy3BQxJgGy7", "nationality": "باكستان", "theme": {"bg": "#dcfce7", "border": "#86efac", "text": "#166534", "dot": "#22c55e"}}, {"name": "ورثة بكر حسن تيجاني\n(نزل شركة اسفار الحجاز)", "permit": "10012473", "phone": "", "extra": "التقوى مخطط باخطمه | شركة أسفار الحجاز العالمية للاستثمار | 524", "lat": 21.400673344275067, "lng": 39.818635817604445, "has_coords": true, "link": "https://maps.app.goo.gl/hN7Cckh1mBMVeF2A7", "nationality": "باكستان", "theme": {"bg": "#dcfce7", "border": "#86efac", "text": "#166534", "dot": "#22c55e"}}, {"name": "الشيخ: حمد ناصر جاسم آل ثاني  \n(نزل دوحة طبية  2 السكينة)", "permit": "10012676", "phone": "", "extra": "العزيزية | مؤسسة دوحة طبية للمقاولات العامة | 348", "lat": 21.39980532917121, "lng": 39.874405971164535, "has_coords": true, "link": "https://maps.app.goo.gl/AqwXJThyKU8VNNWy9", "nationality": "باكستان", "theme": {"bg": "#dcfce7", "border": "#86efac", "text": "#166534", "dot": "#22c55e"}}, {"name": "ورثة : عبدالعزيز بسيوني\n(نزل اروقة الصفوة 3)", "permit": "10012749", "phone": "", "extra": "العزيزية | فندق أروقة الصفوة | 424", "lat": 21.39924113666479, "lng": 39.869220099794575, "has_coords": true, "link": "https://maps.app.goo.gl/pudKSxfRok2cRgdA6", "nationality": "باكستان", "theme": {"bg": "#dcfce7", "border": "#86efac", "text": "#166534", "dot": "#22c55e"}}, {"name": "وقف حمد محمد بن سعيدان\n(فندق دار لمار)", "permit": "10006418", "phone": "", "extra": "اجياد ريع بخش | فندق دار لمار الفندقية | 674", "lat": 21.40206019000731, "lng": 39.831426823902746, "has_coords": true, "link": "https://maps.app.goo.gl/mMnbXNL75Eex98Z77", "nationality": "باكستان", "theme": {"bg": "#dcfce7", "border": "#86efac", "text": "#166534", "dot": "#22c55e"}}, {"name": "ابناء : حمزه محمود قشلان (نزل صالح قشلان 3)", "permit": "10012243", "phone": "", "extra": "العزيزية | مؤسسة صالح حمزه قشلان | 331", "lat": 21.397866485952104, "lng": 39.86677145767093, "has_coords": true, "link": "https://maps.app.goo.gl/yb5ghWydA4tx5Ntd9", "nationality": "باكستان", "theme": {"bg": "#dcfce7", "border": "#86efac", "text": "#166534", "dot": "#22c55e"}}, {"name": "وقف : الشريف عبدالعزيز البركاتي\n(نزل سكون الناصرية 1-2-3-4)", "permit": "10012368", "phone": "", "extra": "العزيزية مخطط البنك | شقق عادل عبدالله الناصر للوحدات السكنية | 1867", "lat": 21.386964643977056, "lng": 39.877832799794604, "has_coords": true, "link": "https://maps.app.goo.gl/bepapna2VGwDoQ3r6", "nationality": "باكستان", "theme": {"bg": "#dcfce7", "border": "#86efac", "text": "#166534", "dot": "#22c55e"}}, {"name": "عادل طه عبدالله بخش\n(فندق انوار الخيمة)", "permit": "10012440", "phone": "", "extra": "اجياد ريع بخش | شركة الخيمة لتشغيل الفنادق | 392", "lat": 21.401964138334684, "lng": 39.83163212830669, "has_coords": true, "link": "https://maps.app.goo.gl/GvWURs1haGSMz9N49", "nationality": "باكستان", "theme": {"bg": "#dcfce7", "border": "#86efac", "text": "#166534", "dot": "#22c55e"}}, {"name": "صالح عبدالرحمن عبدالله الراشد\n(فندق ميسان الصفا)", "permit": "10009670", "phone": "", "extra": "جرول | شركة ميسان الصفا الفندقية شخص واحد | 1375", "lat": 21.436311918754246, "lng": 39.819716917585566, "has_coords": true, "link": "https://maps.app.goo.gl/22kxBiY4qgqczjog8", "nationality": "باكستان", "theme": {"bg": "#dcfce7", "border": "#86efac", "text": "#166534", "dot": "#22c55e"}}, {"name": "وقف: سليم سلطان\n(تايم ان 2 ربوع الخير)", "permit": "10012361", "phone": "", "extra": "العزيزية | شركة تايم إن المحدودة شركة شخص واحد | 577", "lat": 21.397340240078975, "lng": 39.87379303539535, "has_coords": true, "link": "https://maps.app.goo.gl/Sg2HhB34yLrygsZo9", "nationality": "باكستان", "theme": {"bg": "#dcfce7", "border": "#86efac", "text": "#166534", "dot": "#22c55e"}}, {"name": "حاتم علي حسن ابوالعلا\n(نزل مجموعة حاتم)", "permit": "10012671", "phone": "", "extra": "العزيزية مخطط البنك | مجموعة حاتم علي حسن احمد ابو العلا لخدمات الأعمال | 229", "lat": 21.38751479327822, "lng": 39.88326221183377, "has_coords": true, "link": "https://maps.app.goo.gl/6VWyXRAriv8bNDdw5", "nationality": "باكستان", "theme": {"bg": "#dcfce7", "border": "#86efac", "text": "#166534", "dot": "#22c55e"}}, {"name": "ورثة عمر سعيد عبود بافيل\n(فندق جوهرة الشرق)", "permit": "10009410", "phone": "", "extra": "جرول ابولهب | فندق جوهرة الشروق الفندقية | 1062", "lat": 21.43569503375984, "lng": 39.812615851764036, "has_coords": true, "link": "https://maps.app.goo.gl/vZ9uf82revvCCkb5A", "nationality": "باكستان", "theme": {"bg": "#dcfce7", "border": "#86efac", "text": "#166534", "dot": "#22c55e"}}, {"name": "عبدالستار هادي ايوب الميمني\n(نزل الموسمين)", "permit": "10012413", "phone": "", "extra": "العزيزبة | نزل الموسمين | 322", "lat": 21.39372633622569, "lng": 39.87274707097711, "has_coords": true, "link": "https://maps.app.goo.gl/Xvjhx5uCjfxkfNXi9", "nationality": "باكستان", "theme": {"bg": "#dcfce7", "border": "#86efac", "text": "#166534", "dot": "#22c55e"}}, {"name": "ورثة سلطان عايض الحارثي\n(نزل كنت المتحدة)", "permit": "10012774", "phone": "", "extra": "الهجرة كدي | شركة كنت المتحدة العقارية | 501", "lat": 21.387864788294163, "lng": 39.837815845796634, "has_coords": true, "link": "https://maps.app.goo.gl/3YXYfNmNCcyMpCGH9", "nationality": "باكستان", "theme": {"bg": "#dcfce7", "border": "#86efac", "text": "#166534", "dot": "#22c55e"}}, {"name": "وقف : الشريف مبارك شنبر المنعمي\n(نزل ساس)", "permit": "10012692", "phone": "", "extra": "العزيزية | مؤسسة ساس ونماء للخدمات اللوجستية | 346", "lat": 21.398177437082698, "lng": 39.87171931760446, "has_coords": true, "link": "https://maps.app.goo.gl/4kDbQY1kRa1hYiSu6", "nationality": "باكستان", "theme": {"bg": "#dcfce7", "border": "#86efac", "text": "#166534", "dot": "#22c55e"}}, {"name": "ورثة: خالد مطر سراج القرشي\n(نزل اجيال 2)", "permit": "10012106", "phone": "", "extra": "العزيزية مخطط البنك | معرض الاجيال للسيارات | 340", "lat": 21.387229770873535, "lng": 39.87981072533757, "has_coords": true, "link": "https://maps.app.goo.gl/nSG7dXdbJWHjvARZ7", "nationality": "باكستان", "theme": {"bg": "#dcfce7", "border": "#86efac", "text": "#166534", "dot": "#22c55e"}}, {"name": "وقف : الشريف مبارك شنبر المنعمي\n(فندق الزائرين)", "permit": "10007672", "phone": "", "extra": "العزيزية | مؤسسة الرواد للسياحة | 1066", "lat": 21.410475018466123, "lng": 39.86182389801065, "has_coords": true, "link": "https://maps.app.goo.gl/L8vEEPSxNTGmx43NA?g_st=ic", "nationality": "باكستان", "theme": {"bg": "#dcfce7", "border": "#86efac", "text": "#166534", "dot": "#22c55e"}}, {"name": "ورثة: عوض علي معيض الزهراني\n(نزل نيو آل قمة)", "permit": "10012664", "phone": "", "extra": "العزيزية | شركة نيو آل قمة | 471", "lat": 21.399201951769985, "lng": 39.87407257116454, "has_coords": true, "link": "https://maps.app.goo.gl/RBbFjskU6YzKruwy8", "nationality": "باكستان", "theme": {"bg": "#dcfce7", "border": "#86efac", "text": "#166534", "dot": "#22c55e"}}, {"name": "عبدالرحمن عبدالله الثنيان\n(فندق كانون)", "permit": "10012837", "phone": "", "extra": "بطحاء قريش | شركة رؤية كانون المحدودة شخص واحد | 602", "lat": null, "lng": null, "has_coords": false, "link": "https://maps.app.goo.gl/mhkbG8Aehh1MEpyY9", "nationality": "باكستان", "theme": {"bg": "#dcfce7", "border": "#86efac", "text": "#166534", "dot": "#22c55e"}}, {"name": "وقف: منيره صالح عبدالرحمن الراجحي (نزل وقف منيره الراجحي كعب بن مالك)", "permit": "10012349", "phone": "", "extra": "العزيزية | مؤسسة منيرة صالح عبدالرحمن الراجحي الوقفية | 218", "lat": 21.40317535755061, "lng": 39.86493743806228, "has_coords": true, "link": "https://maps.app.goo.gl/dowkcNeLuKeQV7Vo9", "nationality": "باكستان", "theme": {"bg": "#dcfce7", "border": "#86efac", "text": "#166534", "dot": "#22c55e"}}, {"name": "وقف : عبدالغني ابراهيم النمري\n(نزل الدارين)", "permit": "10012832", "phone": "", "extra": "الهجرة | مؤسسة الدارين للمقاولات العامة | 366", "lat": 21.39080795011344, "lng": 39.83932706460269, "has_coords": true, "link": "https://maps.app.goo.gl/qSEMPfrehdh1Htte7", "nationality": "باكستان", "theme": {"bg": "#dcfce7", "border": "#86efac", "text": "#166534", "dot": "#22c55e"}}, {"name": "معتوق حماد حامد الغريبي/ محمد حماد حامد الغريبي/ زيد حماد حامد الغريبي/ حامد حماد حامد الغريبي \n(فندق سعد)", "permit": "10012783", "phone": "", "extra": "العزيزية | مؤسسة العلمية المتميزة التجارية | 183", "lat": 21.389262152106298, "lng": 39.874175696063595, "has_coords": true, "link": "https://maps.app.goo.gl/mWBkknKfpyqbGM5E6", "nationality": "باكستان", "theme": {"bg": "#dcfce7", "border": "#86efac", "text": "#166534", "dot": "#22c55e"}}, {"name": "وقف : احمد محمد محمد الواحدي\n(نزل احمد الواحدي 1)", "permit": "10012482", "phone": "", "extra": "العزيزية | مؤسسة أحمد محمد بن محمد الواحدي التجارية | 243", "lat": 21.39861368459796, "lng": 39.868219378727076, "has_coords": true, "link": "https://maps.app.goo.gl/gaVnGiZBMQWzszcZ8", "nationality": "باكستان", "theme": {"bg": "#dcfce7", "border": "#86efac", "text": "#166534", "dot": "#22c55e"}}, {"name": "وقف حسين سالم الجفري\n(نزل برج التقوى 1)", "permit": "10012746", "phone": "", "extra": "التقوى مخطط باخطمه | شركة ديار التقوى لتشغيل الفنادق ذات مسئولية محدودة | 429", "lat": 21.399504336561364, "lng": 39.81921788202261, "has_coords": true, "link": "https://maps.app.goo.gl/T7TaqkGfvRXSAyFA6", "nationality": "باكستان", "theme": {"bg": "#dcfce7", "border": "#86efac", "text": "#166534", "dot": "#22c55e"}}, {"name": "وقف حسين سالم الجفري\n(نزل برج التقوى 2)", "permit": "10012745", "phone": "", "extra": "التقوى مخطط باخطمه | شركة ديار التقوى لتشغيل الفنادق ذات مسئولية محدودة | 366", "lat": 21.39934703662319, "lng": 39.819086499794594, "has_coords": true, "link": "https://maps.app.goo.gl/JPfj9ep23LExiveD7", "nationality": "باكستان", "theme": {"bg": "#dcfce7", "border": "#86efac", "text": "#166534", "dot": "#22c55e"}}, {"name": "وقف حسين سالم الجفري\n(نزل برج التقوى 3)", "permit": "10012744", "phone": "", "extra": "التقوى مخطط باخطمه | شركة ديار التقوى لتشغيل الفنادق ذات مسئولية محدودة | 374", "lat": 21.399164736694814, "lng": 39.81890951758549, "has_coords": true, "link": "https://maps.app.goo.gl/dawwHK2pbWQBGRbs9", "nationality": "باكستان", "theme": {"bg": "#dcfce7", "border": "#86efac", "text": "#166534", "dot": "#22c55e"}}, {"name": "وقف حسين سالم الجفري\n(نزل برج التقوى 4)", "permit": "10012811", "phone": "", "extra": "التقوى مخطط باخطمه | شركة ديار التقوى لتشغيل الفنادق ذات مسئولية محدودة | 354", "lat": 21.39901103405934, "lng": 39.818699917604455, "has_coords": true, "link": "https://maps.app.goo.gl/WcpjXQt1JotYZmDp6", "nationality": "باكستان", "theme": {"bg": "#dcfce7", "border": "#86efac", "text": "#166534", "dot": "#22c55e"}}, {"name": "وقف: ال حميدان (نزل الهدايه الكبرى 4 صروح العلاء 6)", "permit": "10012120", "phone": "", "extra": "العزيزية | فندق الهداية الكبرى الفندقية | 560", "lat": 21.395610910475238, "lng": 39.88003670847663, "has_coords": true, "link": "https://maps.app.goo.gl/DuGi6upXbHonVPWA9", "nationality": "باكستان", "theme": {"bg": "#dcfce7", "border": "#86efac", "text": "#166534", "dot": "#22c55e"}}, {"name": "ورثة : يوسف يعقوب عبدالقادري بخاري (نزل نعيمه بخاري 2)", "permit": "10012208", "phone": "", "extra": "العزيزية ستر اللحياني | مؤسسة نعيمه خال محمد محمد عثمان بخاري للتجارة | 178", "lat": 21.387074743123065, "lng": 39.86835098946074, "has_coords": true, "link": "https://maps.app.goo.gl/b4T1HLYbH7wwcg6TA", "nationality": "باكستان", "theme": {"bg": "#dcfce7", "border": "#86efac", "text": "#166534", "dot": "#22c55e"}}, {"name": "وقف : البهنساوي\n(نزل جسور المشاعر)", "permit": "10012024", "phone": "", "extra": "العزيزية ستر اللحياني | شركة جسور المشاعر لتشغيل الفنادق | 187", "lat": 21.38680632508448, "lng": 39.87247434099256, "has_coords": true, "link": "https://maps.app.goo.gl/8HFZ5D1Frwoyp9ps8", "nationality": "باكستان", "theme": {"bg": "#dcfce7", "border": "#86efac", "text": "#166534", "dot": "#22c55e"}}, {"name": "وقف : البهنساوي\n(نزل جسور المشاعر)", "permit": "10012104", "phone": "", "extra": "العزيزية ستر اللحياني | مؤسسة نعيمه خال محمد محمد عثمان بخاري للتجارة | 185", "lat": 21.386589949085995, "lng": 39.87249927090292, "has_coords": true, "link": "https://maps.app.goo.gl/kW2PViEMnhNnyt8aA", "nationality": "باكستان", "theme": {"bg": "#dcfce7", "border": "#86efac", "text": "#166534", "dot": "#22c55e"}}, {"name": "منصور محمد ابراهيم التركي", "permit": "10011838", "phone": "", "extra": "العزيزية | مؤسسة شادي نفادي | 392", "lat": 21.392669742389195, "lng": 39.87799999650236, "has_coords": true, "link": "https://maps.app.goo.gl/5Xv1BivN8mrEJzNr5", "nationality": "باكستان", "theme": {"bg": "#dcfce7", "border": "#86efac", "text": "#166534", "dot": "#22c55e"}}, {"name": "فاطمه محمد صالح وزقر", "permit": "10012170", "phone": "", "extra": "العزيزية | مؤسسة اصل الجوهرة الفندقية | 616", "lat": 21.395974975878516, "lng": 39.87695038886684, "has_coords": true, "link": "https://maps.app.goo.gl/oR19kMnRnSYJjKh17", "nationality": "باكستان", "theme": {"bg": "#dcfce7", "border": "#86efac", "text": "#166534", "dot": "#22c55e"}}, {"name": "ياسر عبدالله تركي العتيبي\n(نزل شركة جاي دبليو ايه)", "permit": "10011591", "phone": "", "extra": "العزيزية | شركة جاي دبليو ايه | 224", "lat": 21.41485288424316, "lng": 39.85730113561181, "has_coords": true, "link": "https://maps.app.goo.gl/jbnGcmMDW1woYUMA9", "nationality": "باكستان", "theme": {"bg": "#dcfce7", "border": "#86efac", "text": "#166534", "dot": "#22c55e"}}, {"name": "وقف: محمود صالح ابراهيم قطان\n(محموديه جامعة)", "permit": "10011402", "phone": "", "extra": "العزيزية | مؤسسة خالد محمود صالح قطان | 325", "lat": 21.407810111801965, "lng": 39.86204534335106, "has_coords": true, "link": "https://maps.app.goo.gl/sGHAwsfYbWb4M1769", "nationality": "باكستان", "theme": {"bg": "#dcfce7", "border": "#86efac", "text": "#166534", "dot": "#22c55e"}}, {"name": "وقف: فاطمه على باناعمه\n(فندق درة الخيمة)", "permit": "10012853", "phone": "", "extra": "الهجرة | شركة الخيمة لتشغيل الفنادق | 610", "lat": 21.390289735947533, "lng": 39.83701926704013, "has_coords": true, "link": "https://maps.app.goo.gl/cnrh1P3sjqAGLS1Q7", "nationality": "باكستان", "theme": {"bg": "#dcfce7", "border": "#86efac", "text": "#166534", "dot": "#22c55e"}}, {"name": "درهوم دعيفس مشخص البقمي \n(فندق مواسم الخير)", "permit": "10007195", "phone": "", "extra": "العزيزية | مؤسسة مواسم الخير الفندقية | 868", "lat": 21.404209713120782, "lng": 39.86233999650264, "has_coords": true, "link": "https://maps.app.goo.gl/cSczF4pbcyP4UcPT9", "nationality": "باكستان", "theme": {"bg": "#dcfce7", "border": "#86efac", "text": "#166534", "dot": "#22c55e"}}, {"name": "عصام خليل ابراهيم طلاقي\n(نزل سعادة الدارين)", "permit": "10012651", "phone": "", "extra": "العزيزية | مؤسسة سعادة الدارين | 363", "lat": 21.411221375855433, "lng": 39.863305224325195, "has_coords": true, "link": "https://maps.app.goo.gl/Eu3rYaEbLDBxKQJP6", "nationality": "باكستان", "theme": {"bg": "#dcfce7", "border": "#86efac", "text": "#166534", "dot": "#22c55e"}}, {"name": "حسن عبدالوهاب حسن شافعي\n(نزل ام القرى شافعي 1)", "permit": "10011727", "phone": "", "extra": "العزيزية | مؤسسة منيره عمرو الجعيد لتشغيل الفنادق | 742", "lat": 21.409447022506882, "lng": 39.863845770736766, "has_coords": true, "link": "https://maps.app.goo.gl/r7gJVmj1mxJrsB4z6", "nationality": "باكستان", "theme": {"bg": "#dcfce7", "border": "#86efac", "text": "#166534", "dot": "#22c55e"}}, {"name": "حسن عبدالوهاب حسن شافعي\n(نزل ام القرى شافعي 2)", "permit": "10012092", "phone": "", "extra": "العزيزية | مؤسسة منيره عمرو الجعيد لتشغيل الفنادق | 250", "lat": 21.41075753360687, "lng": 39.863666699999996, "has_coords": true, "link": "https://maps.app.goo.gl/1KNcqpMPWfz6uobD7", "nationality": "باكستان", "theme": {"bg": "#dcfce7", "border": "#86efac", "text": "#166534", "dot": "#22c55e"}}, {"name": "أبناء سعيد ابراهيم مشيع الغامدي\n(فندق رفاع العزيزية)", "permit": "10008136", "phone": "", "extra": "العزيزية | فندق الرفاع العزيزية | 2259", "lat": 21.409549444709583, "lng": 39.86752013664438, "has_coords": true, "link": "https://maps.app.goo.gl/yvidmJsX4oa5U5AE8", "nationality": "باكستان", "theme": {"bg": "#dcfce7", "border": "#86efac", "text": "#166534", "dot": "#22c55e"}}, {"name": "يوسف عبدالله محمد الجدعان\n(نزل احسان الضياغة 2)", "permit": "10012740", "phone": "", "extra": "العزيزية\nمخطط البنك | شركة احسان الضيافة المحدودة | 640", "lat": 21.388139796343008, "lng": 39.878762034449885, "has_coords": true, "link": "https://maps.app.goo.gl/rxUwoPgoiofZmRf37", "nationality": "باكستان", "theme": {"bg": "#dcfce7", "border": "#86efac", "text": "#166534", "dot": "#22c55e"}}, {"name": "وقف : ابراهيم علي ابراهيم ركة\n(نزل المحيط)", "permit": "10011949", "phone": "", "extra": "العزيزية ستر اللحياني | شركة المحيط المميزة التجارية | 216", "lat": 21.386922080118133, "lng": 39.87168917199633, "has_coords": true, "link": "https://maps.app.goo.gl/W9g4fyaE3J6HVFYi9", "nationality": "باكستان", "theme": {"bg": "#dcfce7", "border": "#86efac", "text": "#166534", "dot": "#22c55e"}}, {"name": "وقف عين زبيده\n(نزل روائح المسك)", "permit": "10012191", "phone": "", "extra": "العزيزية مخطط البنك | مؤسسة روائح المسك لتشغيل الفنادق | 255", "lat": 21.38851288753102, "lng": 39.87897584741557, "has_coords": true, "link": "https://maps.app.goo.gl/Q3v5J2KHPBuxVp7Q8", "nationality": "باكستان", "theme": {"bg": "#dcfce7", "border": "#86efac", "text": "#166534", "dot": "#22c55e"}}, {"name": "ورثة : عبدالله عبدالعزيز الميمان\n(شركة عرفات الذهبية)", "permit": "10012107", "phone": "", "extra": "العزيزية الشمالية | شركة عرفات الذهبية | 1725", "lat": 21.418553847858497, "lng": 39.860926917797606, "has_coords": true, "link": "https://maps.app.goo.gl/jJnUSZqERSUCpT8K7", "nationality": "باكستان", "theme": {"bg": "#dcfce7", "border": "#86efac", "text": "#166534", "dot": "#22c55e"}}, {"name": "خالد صالح عبدالله السلطان \n(دار المشاعرالاولى 4)", "permit": "10011334", "phone": "", "extra": "العزيزية | شركة  دار المشاعر الأولى المحدودة | 284", "lat": 21.395597343903976, "lng": 39.87204776821388, "has_coords": true, "link": "https://maps.app.goo.gl/9AAPX7kUirNgzvzo7", "nationality": "باكستان", "theme": {"bg": "#dcfce7", "border": "#86efac", "text": "#166534", "dot": "#22c55e"}}, {"name": "وقف: الشريف عبدالحفيظ سلطان المغربي (كنور الرحمة 2)", "permit": "10011425", "phone": "", "extra": "العزيزية | مؤسسة كنوز الرحمة الفندقية | 344", "lat": 21.400757549325427, "lng": 39.87287817116454, "has_coords": true, "link": "https://maps.app.goo.gl/emZmEDwM7LbGDU176", "nationality": "باكستان", "theme": {"bg": "#dcfce7", "border": "#86efac", "text": "#166534", "dot": "#22c55e"}}, {"name": "شركة : سليمان عبدالعزيز الراجحي للاستثمارات العقارية (فيليج 2)", "permit": "10012619", "phone": "", "extra": "العزيزية | شركة سنود الفندقية شركة مساهمة مقفلة | 595", "lat": 21.396462276952775, "lng": 39.880988055345185, "has_coords": true, "link": "https://maps.app.goo.gl/FS25iY8g2EepqzR26", "nationality": "باكستان", "theme": {"bg": "#dcfce7", "border": "#86efac", "text": "#166534", "dot": "#22c55e"}}, {"name": "شركة : سليمان عبدالعزيز الراجحي للاستثمارات العقارية (فيليج 5)", "permit": "10012607", "phone": "", "extra": "العزيزية | شركة سنود الفندقية شركة مساهمة مقفلة | 575", "lat": 21.397239744202892, "lng": 39.88129487116454, "has_coords": true, "link": "https://maps.app.goo.gl/2nPxBTfVUWJQCWG77", "nationality": "باكستان", "theme": {"bg": "#dcfce7", "border": "#86efac", "text": "#166534", "dot": "#22c55e"}}, {"name": "شركة : سليمان عبدالعزيز الراجحي للاستثمارات العقارية (فيليج 9)", "permit": "10012629", "phone": "", "extra": "العزيزية | شركة سنود الفندقية شركة مساهمة مقفلة | 471", "lat": 21.396729755654576, "lng": 39.88184402883547, "has_coords": true, "link": "https://maps.app.goo.gl/qRcatf1nEPv1tkf17", "nationality": "باكستان", "theme": {"bg": "#dcfce7", "border": "#86efac", "text": "#166534", "dot": "#22c55e"}}, {"name": "شركة : سليمان عبدالعزيز الراجحي للاستثمارات العقارية (فيليج 11)", "permit": "10012636", "phone": "", "extra": "العزيزية | شركة سنود الفندقية شركة مساهمة مقفلة | 467", "lat": 21.396416434959306, "lng": 39.88156632883546, "has_coords": true, "link": "https://maps.app.goo.gl/VGWm8An5ZgnaYwW68", "nationality": "باكستان", "theme": {"bg": "#dcfce7", "border": "#86efac", "text": "#166534", "dot": "#22c55e"}}, {"name": "شركة : سليمان عبدالعزيز الراجحي للاستثمارات العقارية (فيليج 12)", "permit": "10012636", "phone": "", "extra": "العزيزية | شركة سنود الفندقية شركة مساهمة مقفلة | 466", "lat": 21.39622193529148, "lng": 39.8814722, "has_coords": true, "link": "https://maps.app.goo.gl/UmqZa9RJtH5kU6i39", "nationality": "باكستان", "theme": {"bg": "#dcfce7", "border": "#86efac", "text": "#166534", "dot": "#22c55e"}}, {"name": "وقف: احمد فيض الله كردى\n(نزل شركة إيفاه)", "permit": "10012698", "phone": "", "extra": "العزيزية | شركة إيفاه المحدودة | 523", "lat": 21.399639731426287, "lng": 39.86309999587576, "has_coords": true, "link": "https://maps.app.goo.gl/KQ93JyNJRTnHtEH58", "nationality": "باكستان", "theme": {"bg": "#dcfce7", "border": "#86efac", "text": "#166534", "dot": "#22c55e"}}, {"name": "محمد يونس كلنت الجاوي (فندق أثير المشاعر المتميزة)", "permit": "10008627", "phone": "", "extra": "جرول | فندق أثير المشاعر المتميزة للضيافة السياحي | 1077", "lat": 21.435508425723707, "lng": 39.81286649979464, "has_coords": true, "link": "https://maps.app.goo.gl/VVrMGBDkwyodJ8VT8", "nationality": "باكستان", "theme": {"bg": "#dcfce7", "border": "#86efac", "text": "#166534", "dot": "#22c55e"}}, {"name": "وقف: شاهر ابراهيم زيني\n(نزل نبراس العنوان)", "permit": "10012487", "phone": "", "extra": "العزيزية\nستر اللحياني | شركة نبراس العنوان للتجارة | 212", "lat": 21.385088642223554, "lng": 39.87344168202259, "has_coords": true, "link": "https://maps.app.goo.gl/GeUBDWF9Tef8zDmVA?g_st=ic", "nationality": "باكستان", "theme": {"bg": "#dcfce7", "border": "#86efac", "text": "#166534", "dot": "#22c55e"}}, {"name": "طلال بكر محي الدين مليباري\n(نزل مليباري)", "permit": "10012575", "phone": "", "extra": "العزيزبة | مؤسسة محمد عثمان المجلد مليباري وبكر محي الدين علوي مليباري ومحمد احمد بكر مليباري | 245", "lat": 21.391943934381107, "lng": 39.873542482022614, "has_coords": true, "link": "https://maps.app.goo.gl/GaP9xqKQaPiXSya89", "nationality": "باكستان", "theme": {"bg": "#dcfce7", "border": "#86efac", "text": "#166534", "dot": "#22c55e"}}, {"name": "فيصل حسين الجفري \n(فندق اللؤلؤة الزرقاء)", "permit": "10009279", "phone": "", "extra": "شارع المنصور | فندق اللؤلؤة الزرقاء الفندقية | 1162", "lat": 21.401991136508084, "lng": 39.809920187288675, "has_coords": true, "link": "https://maps.app.goo.gl/Pma6gPxF75c5usun9", "nationality": "باكستان", "theme": {"bg": "#dcfce7", "border": "#86efac", "text": "#166534", "dot": "#22c55e"}}, {"name": "وقف : فريده ياسين العظمه\n(فندق اوتاد البدر)", "permit": "10007414", "phone": "", "extra": "العزيزية | شركة أوتاد البدر | 563", "lat": 21.395243231421915, "lng": 39.87738941346682, "has_coords": true, "link": "https://maps.app.goo.gl/AYb7MuWGd4e3bwrB7", "nationality": "باكستان", "theme": {"bg": "#dcfce7", "border": "#86efac", "text": "#166534", "dot": "#22c55e"}}, {"name": "وقف: داتو فوجت (نزل الميزان السكنية)", "permit": "10012726", "phone": "", "extra": "العزيزية | نزل الميزان السكنية للنزل السياحيه | 550", "lat": 21.402707608174328, "lng": 39.86824127200078, "has_coords": true, "link": "https://maps.app.goo.gl/9u583fHjrzryjrECA", "nationality": "باكستان", "theme": {"bg": "#dcfce7", "border": "#86efac", "text": "#166534", "dot": "#22c55e"}}, {"name": "وقف: عمر حسين بافضل\n(نزل فضل الخير 1)", "permit": "10012549", "phone": "", "extra": "العزيزية\nستر اللحياني | شركة فضل الخير الفندقية | 241", "lat": 21.38801722335676, "lng": 39.87233928417937, "has_coords": true, "link": "https://maps.app.goo.gl/qRK5pUrvYn2VTQUt7", "nationality": "باكستان", "theme": {"bg": "#dcfce7", "border": "#86efac", "text": "#166534", "dot": "#22c55e"}}, {"name": "محمد سيف حسن اليماني\n(نزل محمد سيف)", "permit": "10012216", "phone": "", "extra": "العزيزية | شركة محمد سيف اليماني للمقاولات العامة | 310", "lat": 21.395924450035288, "lng": 39.86608488378564, "has_coords": true, "link": "https://maps.app.goo.gl/1GmrtzefP9aXzUHWA", "nationality": "باكستان", "theme": {"bg": "#dcfce7", "border": "#86efac", "text": "#166534", "dot": "#22c55e"}}, {"name": "ابناء : حمزه محمود قشلان (نزل صالح قشلان 1)", "permit": "10012052", "phone": "", "extra": "العزيزية | مؤسسة صالح حمزه قشلان | 170", "lat": 21.39716, "lng": 39.86726, "has_coords": true, "link": "https://maps.app.goo.gl/U8u1HWwYP4CsXLsW8", "nationality": "باكستان", "theme": {"bg": "#dcfce7", "border": "#86efac", "text": "#166534", "dot": "#22c55e"}}, {"name": "الشيخ: أحمد ناصر جاسم آل ثاني \n(نزل دوحة طبية 4 الريم)", "permit": "10012400", "phone": "", "extra": "العزيزية | مؤسسة دوحة طبية للمقاولات العامة | 202", "lat": 21.399239027575216, "lng": 39.87225372000581, "has_coords": true, "link": "https://maps.app.goo.gl/PueTcCRPeXxjezwt7", "nationality": "باكستان", "theme": {"bg": "#dcfce7", "border": "#86efac", "text": "#166534", "dot": "#22c55e"}}, {"name": "الشيخ: حمد ناصر جاسم آل ثاني (نزل دوحة طبية 1 الجوال)", "permit": "10012372", "phone": "", "extra": "العزيزية | مؤسسة دوحة طبية للمقاولات العامة | 424", "lat": 21.400137795248806, "lng": 39.87483866142583, "has_coords": true, "link": "https://maps.app.goo.gl/R3DrsMLGVVvM9Emi6", "nationality": "باكستان", "theme": {"bg": "#dcfce7", "border": "#86efac", "text": "#166534", "dot": "#22c55e"}}, {"name": "وقف: رباط المغاربه\n(نزل احمد محمد سعيدي)", "permit": "10012514", "phone": "", "extra": "العزيزية | مؤسسة احمد محمد سعيدي للمقاولات | 233", "lat": 21.398425274712814, "lng": 39.86812554741559, "has_coords": true, "link": "https://maps.app.goo.gl/FwDgDQ1WBNoptp2Z7", "nationality": "باكستان", "theme": {"bg": "#dcfce7", "border": "#86efac", "text": "#166534", "dot": "#22c55e"}}, {"name": "وقف : زين حسين علوى الجفرى", "permit": "10011655", "phone": "", "extra": "العزيزية مخطط البنك | مؤسسة ضيافة التميز للوحدات السكنية المفروشة | 344", "lat": 21.386662436636072, "lng": 39.87677268192328, "has_coords": true, "link": "https://maps.app.goo.gl/xzcSf9gPjbvGJcKC7", "nationality": "باكستان", "theme": {"bg": "#dcfce7", "border": "#86efac", "text": "#166534", "dot": "#22c55e"}}, {"name": "سرحان محمد خفير القرني\n(فندق مكان التميز 2)", "permit": "10011842", "phone": "", "extra": "العزيزية | شركة مكان التميز المحدودة | 440", "lat": 21.410454858901318, "lng": 39.863250725016286, "has_coords": true, "link": "https://maps.app.goo.gl/8dkMNTucnfD3a2dk9", "nationality": "باكستان", "theme": {"bg": "#dcfce7", "border": "#86efac", "text": "#166534", "dot": "#22c55e"}}, {"name": "عبدالملك طه عبدالله الشيبي\n(فندق ابيل)", "permit": "10012790", "phone": "", "extra": "الهجرة | مؤسسة عبدالملك طه عبدالله الشيبي | 240", "lat": 21.384897277006193, "lng": 39.83317310546257, "has_coords": true, "link": "https://maps.app.goo.gl/frgaDbVUtoS4Uvi96", "nationality": "باكستان", "theme": {"bg": "#dcfce7", "border": "#86efac", "text": "#166534", "dot": "#22c55e"}}, {"name": "وقف : سالم عبدالله الهذلي\n(نزل ضيافة مدى النسيم)", "permit": "10011794", "phone": "", "extra": "العزيزية الهداية | شركة مدى النسيم التجارية | 418", "lat": 21.38898495720804, "lng": 39.87457214124591, "has_coords": true, "link": "https://maps.app.goo.gl/aMYCiiTsbyuR1JkYA", "nationality": "باكستان", "theme": {"bg": "#dcfce7", "border": "#86efac", "text": "#166534", "dot": "#22c55e"}}, {"name": "عبدالخالق داود ابراهيم بن داود\n(نزل القمة القندقية)", "permit": "10012544", "phone": "", "extra": "العزيزية مخطط البنك | شركة القمة الفندقية المحدودة | 778", "lat": 21.387079543933915, "lng": 39.87667171760444, "has_coords": true, "link": "https://maps.app.goo.gl/ecsjzQiziDNyeFXL8", "nationality": "باكستان", "theme": {"bg": "#dcfce7", "border": "#86efac", "text": "#166534", "dot": "#22c55e"}}, {"name": "شركة : اماد العربية (نزل الجابر)", "permit": "10012448", "phone": "", "extra": "العزيزية | شركة الجابر الخدمات الدولية المحدودة | 250", "lat": 21.40970665667185, "lng": 39.86262817116453, "has_coords": true, "link": "https://maps.app.goo.gl/z6tRqxGbgSJd9krQ9", "nationality": "باكستان", "theme": {"bg": "#dcfce7", "border": "#86efac", "text": "#166534", "dot": "#22c55e"}}, {"name": "وقف: شاكر حمود ابوجمال العبدلى الشريف", "permit": "10011558", "phone": "", "extra": "العزيزية | مؤسسة شادي نفادي | 558", "lat": 21.39206306298625, "lng": 39.87443367116454, "has_coords": true, "link": "https://maps.app.goo.gl/MHe65apXP685UuzY7", "nationality": "باكستان", "theme": {"bg": "#dcfce7", "border": "#86efac", "text": "#166534", "dot": "#22c55e"}}, {"name": "فهد عبدالعزيز فهد السعيد\n(عمارة الصفا)", "permit": "10012719", "phone": "", "extra": "العزيزية | شركة مزايا روفان | 173", "lat": 21.403068326225956, "lng": 39.8651394937028, "has_coords": true, "link": "https://maps.app.goo.gl/ttsJJvzgxGjWgYgAA", "nationality": "باكستان", "theme": {"bg": "#dcfce7", "border": "#86efac", "text": "#166534", "dot": "#22c55e"}}, {"name": "ورثة: حبيب الرحمن عبدالقهارعطا خوجه (فندق الدار البيضاء)", "permit": "10011686", "phone": "", "extra": "العزيزية\nستر اللحياني | شركة فندق الدار البيضاء | 470", "lat": 21.385809877947207, "lng": 39.87363099087219, "has_coords": true, "link": "https://maps.app.goo.gl/Fcn55kdNwzHL8Eq78", "nationality": "باكستان", "theme": {"bg": "#dcfce7", "border": "#86efac", "text": "#166534", "dot": "#22c55e"}}, {"name": "وقف: عمر حسين بافضل\n(نزل فضل الخير 2)", "permit": "10012577", "phone": "", "extra": "العزيزية\nستر اللحياني | شركة فضل الخير الفندقية | 280", "lat": 21.388042184625714, "lng": 39.872579067350024, "has_coords": true, "link": "https://maps.app.goo.gl/hFDkyofHzWTRqifo8", "nationality": "باكستان", "theme": {"bg": "#dcfce7", "border": "#86efac", "text": "#166534", "dot": "#22c55e"}}, {"name": "وقف : عائشة احمد رمضان المرزوقي\n(نزل وقف عائشة المرزوقي)", "permit": "10012805", "phone": "", "extra": "العزيزية | نزل عائشة بنت أحمد محمد رمضان المرزوقي ووالدتها محبوبة بنت محمد علي هنيدي | 255", "lat": 21.39330765980438, "lng": 39.87809205258709, "has_coords": true, "link": "https://maps.app.goo.gl/qvYmhi6uYBC4hyFY9", "nationality": "باكستان", "theme": {"bg": "#dcfce7", "border": "#86efac", "text": "#166534", "dot": "#22c55e"}}, {"name": "ابناء : حمزه محمود قشلان (نزل صالح قشلان 4)", "permit": "10012084", "phone": "", "extra": "العزيزية | مؤسسة صالح حمزه قشلان | 348", "lat": 21.397040082795392, "lng": 39.86744121207712, "has_coords": true, "link": "https://maps.app.goo.gl/w1dwiW8NenT5zqD57", "nationality": "باكستان", "theme": {"bg": "#dcfce7", "border": "#86efac", "text": "#166534", "dot": "#22c55e"}}, {"name": "ابناء : حمزه محمود قشلان (نزل صالح قشلان 5)", "permit": "10012129", "phone": "", "extra": "العزيزية | مؤسسة صالح حمزه قشلان | 309", "lat": 21.397247565492545, "lng": 39.86750634232729, "has_coords": true, "link": "https://maps.app.goo.gl/4vAmRtSi9gif143a7", "nationality": "باكستان", "theme": {"bg": "#dcfce7", "border": "#86efac", "text": "#166534", "dot": "#22c55e"}}, {"name": "وقف : يعقوب عبدالله قاضي\n(نزل وقف يعقوب قاضي)", "permit": "10012521", "phone": "", "extra": "العزيزية | وقف يعقوب عبدالله قاضي | 241", "lat": 21.39455174636639, "lng": 39.875552999794664, "has_coords": true, "link": "https://maps.app.goo.gl/kpU4nxLoh5omQKFo9", "nationality": "باكستان", "theme": {"bg": "#dcfce7", "border": "#86efac", "text": "#166534", "dot": "#22c55e"}}, {"name": "وقف: اوقاف الشريف غالب (فيرتا المقام الجامعة - الزيتون)", "permit": "10012925", "phone": "", "extra": "العزيزية | شركة الضيافة العصرية الفندقية | 934", "lat": 21.40624993673019, "lng": 39.862032917604445, "has_coords": true, "link": "https://maps.app.goo.gl/NnZrXpQgD1JkosDd7", "nationality": "باكستان", "theme": {"bg": "#dcfce7", "border": "#86efac", "text": "#166534", "dot": "#22c55e"}}, {"name": "وقف : سليمان فرج غزاوي\n(نزل منصور فريج العميري)", "permit": "10012759", "phone": "", "extra": "العزيزية | مؤسسة منصور بن فريج العميري التجارية | 350", "lat": 21.395558043385652, "lng": 39.872279099794575, "has_coords": true, "link": "https://maps.app.goo.gl/KN9uitefAu1Y6mBv6", "nationality": "باكستان", "theme": {"bg": "#dcfce7", "border": "#86efac", "text": "#166534", "dot": "#22c55e"}}, {"name": "ورثة : رشيد محمد الرشيد (نزل برج الخير 3)", "permit": "10012547", "phone": "", "extra": "العزيزية | شركة برج الخير لإدارة الأملاك | 541", "lat": 21.39678489368084, "lng": 39.87837705690271, "has_coords": true, "link": "https://maps.app.goo.gl/5BJp6EAW4xzguxtVA", "nationality": "باكستان", "theme": {"bg": "#dcfce7", "border": "#86efac", "text": "#166534", "dot": "#22c55e"}}, {"name": "ورثة: رشيد محمد الرشيد وورثة ابراهيم رشيد محمد الرشيد (نزل برج الخير 6)", "permit": "10012713", "phone": "", "extra": "العزيزية | شركة برج الخير لإدارة الأملاك | 362", "lat": 21.398133901298642, "lng": 39.87883140533251, "has_coords": true, "link": "https://maps.app.goo.gl/FykPjSMr8wPR6g3R6", "nationality": "باكستان", "theme": {"bg": "#dcfce7", "border": "#86efac", "text": "#166534", "dot": "#22c55e"}}, {"name": "وقف : الشريف محمد عبدالكريم اللهيمق (نزل هدوء الحجاز للنزل السياحية 4)", "permit": "10011961", "phone": "", "extra": "العزيزية | فندق هدوء الحجاز | 450", "lat": 21.396060037914538, "lng": 39.87755628202258, "has_coords": true, "link": "https://maps.app.goo.gl/xgZHPvy1dfhNfz1W6", "nationality": "باكستان", "theme": {"bg": "#dcfce7", "border": "#86efac", "text": "#166534", "dot": "#22c55e"}}, {"name": "عبدالرحمن عبداللطيف سعود البابطين  (برج A&B) (نزل موثقون طبية)", "permit": "10011978", "phone": "", "extra": "العزيزية | مؤسسة موثقون طيبة للمقاولات | 1000", "lat": 21.39709901329735, "lng": 39.877022475018286, "has_coords": true, "link": "https://maps.app.goo.gl/Jqnfa4EADPrdZwBE9", "nationality": "باكستان", "theme": {"bg": "#dcfce7", "border": "#86efac", "text": "#166534", "dot": "#22c55e"}}, {"name": "ورثة : محمد عبدالله سعيد بازيد\n(نزل ديرتنا)", "permit": "10011547", "phone": "", "extra": "العزيزية | مؤسسة نزل ديرتنا التجارية | 254", "lat": 21.413077479382586, "lng": 39.85882920202446, "has_coords": true, "link": "https://maps.app.goo.gl/re2gx4YTfJGwDqDg6", "nationality": "باكستان", "theme": {"bg": "#dcfce7", "border": "#86efac", "text": "#166534", "dot": "#22c55e"}}, {"name": "شركة : سليمان عبدالعزيز الراجحي للاستثمارات العقارية (فيليج 3)", "permit": "10012619", "phone": "", "extra": "العزيزية | شركة سنود الفندقية شركة مساهمة مقفلة | 596", "lat": 21.396904176637435, "lng": 39.881121828835454, "has_coords": true, "link": "https://maps.app.goo.gl/K5ceoWLBTZ5fUSwA8", "nationality": "باكستان", "theme": {"bg": "#dcfce7", "border": "#86efac", "text": "#166534", "dot": "#22c55e"}}, {"name": "شركة : سليمان عبدالعزيز الراجحي للاستثمارات العقارية (فيليج 6)", "permit": "10012607", "phone": "", "extra": "العزيزية | شركة سنود الفندقية شركة مساهمة مقفلة | 567", "lat": 21.397424154563506, "lng": 39.88143815767093, "has_coords": true, "link": "https://maps.app.goo.gl/Whgqm9cprFtTAPv46", "nationality": "باكستان", "theme": {"bg": "#dcfce7", "border": "#86efac", "text": "#166534", "dot": "#22c55e"}}, {"name": "شركة : سليمان عبدالعزيز الراجحي للاستثمارات العقارية (فيليج 7)", "permit": "10012629", "phone": "", "extra": "العزيزية | شركة سنود الفندقية شركة مساهمة مقفلة | 467", "lat": 21.39707304447621, "lng": 39.88200634232908, "has_coords": true, "link": "https://maps.app.goo.gl/YR8N6YBG3ZjfwHEB9", "nationality": "باكستان", "theme": {"bg": "#dcfce7", "border": "#86efac", "text": "#166534", "dot": "#22c55e"}}, {"name": "احمد عمر سعيد بافيل\n(نزل الفرات الجنادرية)", "permit": "10011556", "phone": "", "extra": "العزيزية | شركة ابناء عمر سعيد عبود بافيل المحدودة | 419", "lat": 21.411398319743753, "lng": 39.86049403102111, "has_coords": true, "link": "https://maps.app.goo.gl/WH1ugYLg15Rf5w689", "nationality": "باكستان", "theme": {"bg": "#dcfce7", "border": "#86efac", "text": "#166534", "dot": "#22c55e"}}, {"name": "نزل وقف علي الراجحي\n(نزل وقف علي الراجحي العائلة 3)", "permit": "10012206", "phone": "", "extra": "العزيزية | مؤسسة علي محمد عبدالله الراجحي الوقفية الأولى | 381", "lat": 21.398957439471225, "lng": 39.8805317820226, "has_coords": true, "link": "https://maps.app.goo.gl/DcAHGJ6WEK1SE6219", "nationality": "باكستان", "theme": {"bg": "#dcfce7", "border": "#86efac", "text": "#166534", "dot": "#22c55e"}}, {"name": "وقف: مبارك علي العتيبي\n(نزل زايد الخير)", "permit": "10012534", "phone": "", "extra": "العزيزية | مؤسسة زايد الخير للمقاولات | 500", "lat": 21.39310873907388, "lng": 39.87876166423171, "has_coords": true, "link": "https://maps.app.goo.gl/LvpKA7tB55VagqvA9", "nationality": "باكستان", "theme": {"bg": "#dcfce7", "border": "#86efac", "text": "#166534", "dot": "#22c55e"}}, {"name": "عبدالله فلحان سالم العتيبي\n(نزل برج العتيبي)", "permit": "10011163", "phone": "", "extra": "العزيزية | مؤسسة عبدالله فلحان العتيبي التجارية | 478", "lat": 21.397022424441854, "lng": 39.87245267838984, "has_coords": true, "link": "https://maps.app.goo.gl/ooXDDeJ1VsoU2fjY9", "nationality": "باكستان", "theme": {"bg": "#dcfce7", "border": "#86efac", "text": "#166534", "dot": "#22c55e"}}, {"name": "منصور عبدالعزيز سعود الدغيار\n(نزل منصور الدعيثر)", "permit": "10012660", "phone": "", "extra": "بطحاء قريش | فندق منصور عبدالعزيز سعود الدغيثر الفندقية | 516", "lat": 21.373149333450883, "lng": 39.837773883281024, "has_coords": true, "link": "https://maps.app.goo.gl/WnEffRBLR7BVfyB9A", "nationality": "باكستان", "theme": {"bg": "#dcfce7", "border": "#86efac", "text": "#166534", "dot": "#22c55e"}}, {"name": "ورثة : تهاني صالح احمد مراد\n(نزل شركة اتزان التسهيلات العقارية)", "permit": "10011511", "phone": "", "extra": "العزيزية ستر اللحياني | شركة اتزان التسهيلات العقارية | 488", "lat": 21.38381617421705, "lng": 39.87315547148453, "has_coords": true, "link": "https://maps.app.goo.gl/hCNyJb6EwBp9C6pY9", "nationality": "باكستان", "theme": {"bg": "#dcfce7", "border": "#86efac", "text": "#166534", "dot": "#22c55e"}}, {"name": "وقف غالب مساعد الشريف\n(فندق فيرتا العزيزية)", "permit": "10012750", "phone": "", "extra": "العزيزية | شركة الضيافة العصرية الفندقية | 696", "lat": 21.400847238761013, "lng": 39.86442021760444, "has_coords": true, "link": "https://maps.app.goo.gl/3Eg24B8p19LieTQw7", "nationality": "باكستان", "theme": {"bg": "#dcfce7", "border": "#86efac", "text": "#166534", "dot": "#22c55e"}}, {"name": "بكر سعيد عبود نشوان\n(دار نشوان)", "permit": "10011789", "phone": "", "extra": "العزيزية | مؤسسة بكر سعيد نشوان للمقاولات | 707", "lat": 21.39660413335446, "lng": 39.865430849808405, "has_coords": true, "link": "https://maps.app.goo.gl/M91TF3PrL7B3AS3z6", "nationality": "باكستان", "theme": {"bg": "#dcfce7", "border": "#86efac", "text": "#166534", "dot": "#22c55e"}}, {"name": "عبدالسلام صالح عبدالعزيز الراجحي\n(بريمير السلام)", "permit": "10012814", "phone": "", "extra": "بطحاء قريش | مجموعة لمار السلام للشقق الفندقية | 1209", "lat": 21.3717936735267, "lng": 39.823330573372765, "has_coords": true, "link": "https://maps.app.goo.gl/12p24o7sX4L5D5878", "nationality": "باكستان", "theme": {"bg": "#dcfce7", "border": "#86efac", "text": "#166534", "dot": "#22c55e"}}, {"name": "وقف: محمد ارشد لمفون \n(نزل شركة عيون التاج)", "permit": "10012467", "phone": "", "extra": "العزيزية | شركة عيون التاج الدولية المحدودة | 287", "lat": 21.401940235604236, "lng": 39.87358348200369, "has_coords": true, "link": "https://maps.app.goo.gl/qQoVfmndZdZhLfua8", "nationality": "باكستان", "theme": {"bg": "#dcfce7", "border": "#86efac", "text": "#166534", "dot": "#22c55e"}}, {"name": "ورثة : عبدالعزيز سراج عبدالملك بليله\n(شركة عرفات الذهبية الفندقية)", "permit": "10012263", "phone": "", "extra": "العزيزية | شركة عرفات الذهبية | 652", "lat": 21.400128744461124, "lng": 39.86466413539534, "has_coords": true, "link": "https://maps.app.goo.gl/RyCNcKPCTYqrFo3s7", "nationality": "باكستان", "theme": {"bg": "#dcfce7", "border": "#86efac", "text": "#166534", "dot": "#22c55e"}}];
+    const map = L.map("map", { zoomControl: true });
+    L.tileLayer("https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png", {
+      maxZoom: 19,
+      attribution: "&copy; OpenStreetMap"
+    }).addTo(map);
 
-const map = L.map('map', { zoomControl:true });
-L.tileLayer('https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png', {
-  maxZoom: 19,
-  attribution: '&copy; OpenStreetMap'
-}).addTo(map);
+    const listEl = document.getElementById("list");
+    const mobileGrid = document.getElementById("mobileGrid");
+    const searchEl = document.getElementById("search");
+    const searchMobileEl = document.getElementById("searchMobile");
+    const areaFilterEl = document.getElementById("areaFilter");
+    const areaFilterMobileEl = document.getElementById("areaFilterMobile");
+    const visibleCountEl = document.getElementById("visibleCount");
+    const statusText = document.getElementById("statusText");
+    const fitBtn = document.getElementById("fitBtn");
+    const showBuildingBtn = document.getElementById("showBuilding");
+    const showHospitalityBtn = document.getElementById("showHospitality");
+    const mobileShowBuildingBtn = document.getElementById("mobileShowBuilding");
+    const mobileShowHospitalityBtn = document.getElementById("mobileShowHospitality");
+    const locateBtn = document.getElementById("locateBtn");
 
-const listEl = document.getElementById('list');
-const mobileListEl = document.getElementById('mobileList');
-const searchEl = document.getElementById('search');
-const searchMobileEl = document.getElementById('searchMobile');
-const visibleCountEl = document.getElementById('visibleCount');
-const visibleCountMobileEl = document.getElementById('visibleCountMobile');
-const fitBtn = document.getElementById('fitBtn');
-const showNameBtn = document.getElementById('showName');
-const showPermitBtn = document.getElementById('showPermit');
-const mobileShowNameBtn = document.getElementById('mobileShowName');
-const mobileShowPermitBtn = document.getElementById('mobileShowPermit');
-const locateBtn = document.getElementById('locateBtn');
-const filterButtons = [...document.querySelectorAll('.filter-btn[data-filter]')];
+    let buildings = [];
+    let markers = [];
+    let labelMode = "building";
+    let userMarker = null;
+    let userLatLng = null;
+    let geoWatchId = null;
+    let editMode = false;
+    let editItem = null;
+    let editPassword = "";
 
-const group = L.featureGroup().addTo(map);
-const markers = [];
-let labelMode = 'name';
-let nationalityFilter = 'الكل';
-let userMarker = null;
-let userLatLng = null;
-let geoWatchId = null;
-
-function distanceMeters(lat1, lng1, lat2, lng2) {
-  const R = 6371000;
-  const toRad = d => d * Math.PI / 180;
-  const dLat = toRad(lat2 - lat1);
-  const dLng = toRad(lng2 - lng1);
-  const a = Math.sin(dLat/2) ** 2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng/2) ** 2;
-  return 2 * R * Math.asin(Math.sqrt(a));
-}
-function formatDistance(m) {
-  if (m == null || Number.isNaN(m)) return '';
-  if (m < 1000) return `${Math.round(m)} م`;
-  return `${(m / 1000).toFixed(1)} كم`;
-}
-function userDistance(item) {
-  if (!userLatLng || !item.has_coords) return '';
-  return formatDistance(distanceMeters(userLatLng.lat, userLatLng.lng, item.lat, item.lng));
-}
-function updateUserLocation(lat, lng, centerMap=false) {
-  userLatLng = {lat, lng};
-  if (!userMarker) {
-    userMarker = L.circleMarker([lat, lng], { radius:8, color:'#ffffff', weight:3, fillColor:'#2563eb', fillOpacity:1 }).addTo(map).bindPopup('موقعك الحالي');
-  } else {
-    userMarker.setLatLng([lat, lng]);
-  }
-  if (centerMap) {
-    map.setView([lat, lng], 15);
-    userMarker.openPopup();
-  }
-  renderCards(filteredLocations(searchEl.value || searchMobileEl.value));
-}
-function startLiveLocation() {
-  if (!navigator.geolocation || geoWatchId !== null) return;
-  geoWatchId = navigator.geolocation.watchPosition(
-    pos => updateUserLocation(pos.coords.latitude, pos.coords.longitude, !userLatLng),
-    err => {},
-    { enableHighAccuracy:true, maximumAge:8000, timeout:15000 }
-  );
-}
-function navUrl(lat, lng) {
-  return `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`;
-}
-function labelText(item) {
-  return labelMode === 'permit' ? (item.permit || item.name) : item.name;
-}
-function nationalityClass(item) {
-  if (item.nationality === 'باكستان') return 'pk';
-  if (item.nationality === 'النيجر') return 'ng';
-  if (item.nationality === 'مصر') return 'eg';
-  return '';
-}
-function theme(item) {
-  return item.theme || {bg:'#fff',border:'#ddd',text:'#111',dot:'#0f766e'};
-}
-function esc(v) {
-  return String(v ?? '').replace(/[&<>"']/g, s => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[s]));
-}
-function markerIcon(item) {
-  const t = theme(item);
-  return L.divIcon({
-    className: 'label-marker',
-    html: `<div class="label-wrap"><span class="label-dot" style="background:${t.dot}"></span><span class="label-text" style="border:1px solid ${t.border}; color:${t.text}">${esc(labelText(item))}</span></div>`,
-    iconSize: [140, 24],
-    iconAnchor: [18, 12],
-    popupAnchor: [0, -10]
-  });
-}
-function cardInfoText(item) {
-  return [
-    item.name,
-    `الجنسية: ${item.nationality}`,
-    `رقم التصريح: ${item.permit}`,
-    `رقم التواصل: ${item.phone}`,
-    item.extra ? `بيانات إضافية: ${item.extra}` : '',
-    item.has_coords ? `الإحداثيات: ${item.lat}, ${item.lng}` : `رابط الموقع: ${item.link}`
-  ].filter(Boolean).join('\n');
-}
-async function copyText(text, btn, successText='تم النسخ') {
-  try {
-    await navigator.clipboard.writeText(text);
-  } catch (e) {
-    const ta = document.createElement('textarea');
-    ta.value = text;
-    document.body.appendChild(ta);
-    ta.select();
-    document.execCommand('copy');
-    ta.remove();
-  }
-  if (btn) {
-    const old = btn.textContent;
-    btn.textContent = successText;
-    setTimeout(() => btn.textContent = old, 1200);
-  }
-}
-function popupHtml(item) {
-  return `
-    <div class="popup-title">${esc(item.name)}</div>
-    <div class="popup-meta">
-      الجنسية: ${esc(item.nationality)}<br>
-      رقم التصريح: ${esc(item.permit)}<br>
-      رقم التواصل: ${esc(item.phone || '—')}${item.extra ? `<br>بيانات إضافية: ${esc(item.extra)}` : ''}${userDistance(item) ? `<br>المسافة منك: ${esc(userDistance(item))}` : ''}
-    </div>
-    <div style="margin-top:8px; display:flex; gap:8px; flex-wrap:wrap;">
-      <a href="${item.link}" target="_blank">فتح الموقع</a>
-      ${item.has_coords ? `<a href="${navUrl(item.lat, item.lng)}" target="_blank">الملاحة</a>` : ``}
-    </div>
-  `;
-}
-function desktopCardHtml(item) {
-  return `
-    <div class="title">
-      <span>${esc(item.name)}</span>
-      <span class="pill">تصريح ${esc(item.permit || '—')}</span>
-    </div>
-    <div class="meta">
-      رقم التواصل: ${esc(item.phone || '—')}${item.extra ? `<br>بيانات إضافية: ${esc(item.extra)}` : ''}${userDistance(item) ? `<br>المسافة منك: ${esc(userDistance(item))}` : ''}${!item.has_coords ? `<br>الموقع: رابط مباشر فقط` : ''}
-    </div>
-    <div class="actions">
-      <button class="btn" data-copy="info">نسخ المعلومات</button>
-      <button class="btn" data-copy="location">نسخ الموقع</button>
-      ${item.has_coords ? `<a class="btn primary" href="${navUrl(item.lat, item.lng)}" target="_blank">الملاحة</a>` : ``}
-      <a class="btn" href="${item.link}" target="_blank">فتح في Google Maps</a>
-    </div>
-  `;
-}
-function mobileCardHtml(item) {
-  return `
-    <div class="title">
-      <span>${esc(item.name)}</span>
-      <span class="pill">تصريح ${esc(item.permit || '—')}</span>
-    </div>
-    <div class="distance-badge">${esc(userDistance(item) ? `يبعد ${userDistance(item)}` : (item.phone ? item.phone : 'رابط مباشر'))}</div>
-    <div class="mobile-mini-actions">
-      <button class="btn" data-copy="info">نسخ المعلومات</button>
-      <button class="btn" data-copy="location">نسخ الموقع</button>
-    </div>
-  `;
-}
-function bindCopyActions(div, item) {
-  const infoBtn = div.querySelector('[data-copy="info"]');
-  const locBtn = div.querySelector('[data-copy="location"]');
-  if (infoBtn) infoBtn.addEventListener('click', (e) => {
-    e.stopPropagation();
-    copyText(cardInfoText(item), e.currentTarget);
-  });
-  if (locBtn) locBtn.addEventListener('click', (e) => {
-    e.stopPropagation();
-    copyText(item.has_coords ? `${item.lat},${item.lng}` : item.link, e.currentTarget);
-  });
-}
-function openItem(item) {
-  if (item.has_coords) {
-    const marker = markers.find(m => m.item._index === item._index);
-    if (marker) {
-      map.setView([item.lat, item.lng], 17);
-      marker.openPopup();
-      highlightCard(item._index);
-      document.getElementById('map').scrollIntoView({behavior:'smooth', block:'start'});
-      return;
+    function esc(v) {
+      return String(v ?? "").replace(/[&<>"']/g, s => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[s]));
     }
-  }
-  if (item.link) window.open(item.link, '_blank');
-}
-function renderCards(items) {
-  listEl.innerHTML = '';
-  items.forEach((item) => {
-    const div = document.createElement('div');
-    div.className = `item ${nationalityClass(item)}`;
-    div.dataset.index = item._index;
-    div.innerHTML = desktopCardHtml(item);
-    bindCopyActions(div, item);
-    div.addEventListener('click', (e) => {
-      if (e.target.closest('a,button')) return;
-      openItem(item);
-    });
-    listEl.appendChild(div);
-  });
-  mobileListEl.innerHTML = '';
-  items.forEach((item) => {
-    const div = document.createElement('div');
-    div.className = `item ${nationalityClass(item)}`;
-    div.dataset.index = item._index;
-    div.innerHTML = mobileCardHtml(item);
-    bindCopyActions(div, item);
-    div.addEventListener('click', (e) => {
-      if (e.target.closest('button')) return;
-      openItem(item);
-    });
-    mobileListEl.appendChild(div);
-  });
-  visibleCountEl.textContent = items.length;
-  visibleCountMobileEl.textContent = items.length;
-}
-function highlightCard(index) {
-  document.querySelectorAll('.item').forEach(el => {
-    el.classList.toggle('active', Number(el.dataset.index) === index);
-  });
-}
-locations.forEach((item, index) => {
-  item._index = index;
-  if (item.has_coords) {
-    const marker = L.marker([item.lat, item.lng], { icon: markerIcon(item) }).addTo(group);
-    marker.item = item;
-    marker.bindPopup(popupHtml(item));
-    marker.on('click', () => highlightCard(index));
-    markers.push(marker);
-  }
-});
-function filteredLocations(query='') {
-  const q = query.trim().toLowerCase();
-  return locations.filter(item => {
-    const nationalityOk = nationalityFilter === 'الكل' || item.nationality === nationalityFilter;
-    const s = `${item.name} ${item.permit} ${item.phone} ${item.extra} ${item.nationality}`.toLowerCase();
-    return nationalityOk && (!q || s.includes(q));
-  });
-}
-function fitAll(items) {
-  const withCoords = items.filter(i => i.has_coords);
-  if (!withCoords.length) return;
-  const bounds = L.latLngBounds(withCoords.map(i => [i.lat, i.lng]));
-  map.fitBounds(bounds.pad(0.15));
-}
-function refreshMarkerLabels() {
-  markers.forEach(marker => marker.setIcon(markerIcon(marker.item)));
-}
-function syncFilterButtons() {
-  filterButtons.forEach(btn => {
-    btn.classList.toggle('active', btn.dataset.filter === nationalityFilter);
-  });
-}
-function applyFilter(query='') {
-  const filtered = filteredLocations(query);
-  markers.forEach(marker => {
-    const show = filtered.some(i => i._index === marker.item._index);
-    if (show) {
-      if (!group.hasLayer(marker)) group.addLayer(marker);
-    } else {
-      if (group.hasLayer(marker)) group.removeLayer(marker);
+
+    function extractCoordsFromLink(link) {
+      if (!link) return { lat: null, lng: null };
+      const s = String(link).trim();
+      const patterns = [
+        /[?&]q=(-?\d+\.\d+),\s*(-?\d+\.\d+)/i,
+        /@(-?\d+\.\d+),\s*(-?\d+\.\d+)/i,
+        /!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/i,
+        /search\/(-?\d+\.\d+)\s*,\s*(-?\d+\.\d+)/i,
+        /search\/.*?(-?\d+\.\d+)\s*,\s*(-?\d+\.\d+)/i,
+        /place\/(-?\d+\.\d+),\s*(-?\d+\.\d+)/i,
+        /(-?\d{1,2}\.\d+)\s*,\s*(-?\d{1,3}\.\d+)/i
+      ];
+      for (const pat of patterns) {
+        const m = s.match(pat);
+        if (m) {
+          const lat = Number(m[1]), lng = Number(m[2]);
+          if (Number.isFinite(lat) && Number.isFinite(lng)) return { lat, lng };
+        }
+      }
+      return { lat: null, lng: null };
     }
-  });
-  renderCards(filtered);
-  fitAll(filtered);
-}
-function setMode(mode) {
-  labelMode = mode;
-  showNameBtn.classList.toggle('active', mode === 'name');
-  showPermitBtn.classList.toggle('active', mode === 'permit');
-  mobileShowNameBtn.classList.toggle('active', mode === 'name');
-  mobileShowPermitBtn.classList.toggle('active', mode === 'permit');
-  refreshMarkerLabels();
-}
 
-filterButtons.forEach(btn => btn.addEventListener('click', () => {
-  nationalityFilter = btn.dataset.filter;
-  syncFilterButtons();
-  applyFilter(searchEl.value || searchMobileEl.value);
-}));
-searchEl.addEventListener('input', () => {
-  searchMobileEl.value = searchEl.value;
-  applyFilter(searchEl.value);
-});
-searchMobileEl.addEventListener('input', () => {
-  searchEl.value = searchMobileEl.value;
-  applyFilter(searchMobileEl.value);
-});
-fitBtn.addEventListener('click', () => fitAll(filteredLocations(searchEl.value || searchMobileEl.value)));
-showNameBtn.addEventListener('click', () => setMode('name'));
-showPermitBtn.addEventListener('click', () => setMode('permit'));
-mobileShowNameBtn.addEventListener('click', () => setMode('name'));
-mobileShowPermitBtn.addEventListener('click', () => setMode('permit'));
-locateBtn.addEventListener('click', () => startLiveLocation());
+    function mapRow(row, index) {
+      let lat = row.lat !== undefined && row.lat !== null && String(row.lat).trim() !== "" ? Number(row.lat) : null;
+      let lng = row.lng !== undefined && row.lng !== null && String(row.lng).trim() !== "" ? Number(row.lng) : null;
+      const link = String(row.link || "").trim();
 
-window.addEventListener('load', () => {
-  startLiveLocation();
-});
+      if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+        const ex = extractCoordsFromLink(link);
+        lat = ex.lat;
+        lng = ex.lng;
+      }
 
-syncFilterButtons();
-renderCards(locations);
-setMode('name');
-fitAll(locations);
-</script>
+      return {
+        _index: index,
+        _rowNumber: row._rowNumber,
+        building_no: String(row.building_no || "").trim(),
+        unified_contract_no: String(row.unified_contract_no || "").trim(),
+        hospitality_center_no: String(row.hospitality_center_no || "").trim(),
+        license_no: String(row.license_no || "").trim(),
+        owner_building_name: String(row.owner_building_name || "").trim(),
+        tenant_name: String(row.tenant_name || "").trim(),
+        area: String(row.area || "").trim(),
+        pilgrims_contract: String(row.pilgrims_contract || "").trim(),
+        pilgrims_center: String(row.pilgrims_center || "").trim(),
+        lat: lat,
+        lng: lng,
+        has_coords: Number.isFinite(lat) && Number.isFinite(lng),
+        link: link || (Number.isFinite(lat) && Number.isFinite(lng) ? `https://www.google.com/maps?q=${lat},${lng}` : "")
+      };
+    }
+
+    function labelText(item) {
+      return labelMode === "hospitality" ? (item.hospitality_center_no || item.building_no) : item.building_no;
+    }
+
+    function markerIcon(item) {
+      return L.divIcon({
+        className: "label-marker",
+        html: `<div class="label-wrap"><span class="label-dot"></span><span class="label-text">${esc(labelText(item))}</span></div>`,
+        iconSize: [130, 24],
+        iconAnchor: [18, 12],
+        popupAnchor: [0, -10]
+      });
+    }
+
+    function navUrl(lat, lng) {
+      return `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`;
+    }
+
+    function popupHtml(item) {
+      return `
+        <div style="font-weight:700;margin-bottom:6px;">عمارة رقم ${esc(item.building_no)}</div>
+        <div style="font-size:12px;color:#4b5563;line-height:1.8;">
+          المنطقة: ${esc(item.area)}<br>
+          مركز الضيافة: ${esc(item.hospitality_center_no)}<br>
+          رقم العقد الموحد: ${esc(item.unified_contract_no)}<br>
+          رقم الترخيص: ${esc(item.license_no)}<br>
+          المالك/اسم العمارة: ${esc(item.owner_building_name)}<br>
+          المستأجر: ${esc(item.tenant_name)}<br>
+          حجاج العقد: ${esc(item.pilgrims_contract)}<br>
+          حجاج المركز: ${esc(item.pilgrims_center)}
+        </div>
+        <div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap;">
+          <a href="${item.link}" target="_blank">فتح الموقع</a>
+          ${item.has_coords ? `<a href="${navUrl(item.lat,item.lng)}" target="_blank">الملاحة</a>` : ``}
+          <button class="btn" onclick="startEditByIndex(${item._index})">تحديث الموقع</button>
+        </div>
+      `;
+    }
+
+    function cardHtml(item) {
+      return `
+        <div class="title">
+          <span>عمارة رقم ${esc(item.building_no)}</span>
+          <span class="pill">${esc(item.area)}</span>
+        </div>
+        <div class="meta">
+          مركز الضيافة: ${esc(item.hospitality_center_no)}<br>
+          رقم العقد الموحد: ${esc(item.unified_contract_no)}<br>
+          رقم الترخيص: ${esc(item.license_no)}<br>
+          المالك/اسم العمارة: ${esc(item.owner_building_name)}<br>
+          المستأجر: ${esc(item.tenant_name)}<br>
+          حجاج العقد: ${esc(item.pilgrims_contract)}<br>
+          حجاج المركز: ${esc(item.pilgrims_center)}
+        </div>
+        <div class="actions">
+          <button class="btn" data-copy="info">نسخ المعلومات</button>
+          <button class="btn" data-copy="location">نسخ الموقع</button>
+          <button class="btn" data-edit="1">تحديث الموقع</button>
+          ${item.has_coords ? `<a class="btn primary" target="_blank" href="${navUrl(item.lat,item.lng)}">الملاحة</a>` : ``}
+        </div>
+      `;
+    }
+
+    function bindCardActions(div, item) {
+      const infoBtn = div.querySelector('[data-copy="info"]');
+      const locBtn = div.querySelector('[data-copy="location"]');
+      const editBtn = div.querySelector('[data-edit="1"]');
+
+      if (infoBtn) infoBtn.addEventListener("click", e => {
+        e.stopPropagation();
+        copyText([
+          `عمارة رقم ${item.building_no}`,
+          `المنطقة: ${item.area}`,
+          `مركز الضيافة: ${item.hospitality_center_no}`,
+          `رقم العقد الموحد: ${item.unified_contract_no}`,
+          `رقم الترخيص: ${item.license_no}`,
+          `المالك/اسم العمارة: ${item.owner_building_name}`,
+          `المستأجر: ${item.tenant_name}`,
+          `حجاج العقد: ${item.pilgrims_contract}`,
+          `حجاج المركز: ${item.pilgrims_center}`
+        ].join("\n"), e.currentTarget);
+      });
+
+      if (locBtn) locBtn.addEventListener("click", e => {
+        e.stopPropagation();
+        copyText(item.has_coords ? `${item.lat},${item.lng}` : item.link, e.currentTarget);
+      });
+
+      if (editBtn) editBtn.addEventListener("click", e => {
+        e.stopPropagation();
+        startEdit(item);
+      });
+    }
+
+    async function copyText(text, btn) {
+      try {
+        await navigator.clipboard.writeText(text);
+      } catch {
+        const ta = document.createElement("textarea");
+        ta.value = text;
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand("copy");
+        ta.remove();
+      }
+      if (btn) {
+        const old = btn.textContent;
+        btn.textContent = "تم";
+        setTimeout(() => btn.textContent = old, 900);
+      }
+    }
+
+    function filtered(query = "") {
+      const q = query.trim().toLowerCase();
+      const selectedArea = areaFilterEl.value;
+      return buildings.filter(item => {
+        const areaOk = selectedArea === "الكل" || item.area === selectedArea;
+        const text = `${item.building_no} ${item.owner_building_name} ${item.tenant_name} ${item.hospitality_center_no} ${item.license_no} ${item.unified_contract_no} ${item.area}`.toLowerCase();
+        return areaOk && (!q || text.includes(q));
+      });
+    }
+
+    const group = L.featureGroup().addTo(map);
+
+    function clearMarkers() {
+      markers.forEach(m => group.removeLayer(m));
+      markers = [];
+    }
+
+    function rebuildMarkers() {
+      clearMarkers();
+      buildings.forEach(item => {
+        if (!item.has_coords) return;
+        const marker = L.marker([item.lat, item.lng], { icon: markerIcon(item) }).addTo(group);
+        marker.item = item;
+        marker.bindPopup(popupHtml(item));
+        marker.on("click", () => highlightCard(item._index));
+        markers.push(marker);
+      });
+    }
+
+    function highlightCard(index) {
+      document.querySelectorAll(".card").forEach(el => el.classList.toggle("active", Number(el.dataset.index) === index));
+    }
+
+    function openItem(item) {
+      const marker = markers.find(m => m.item._index === item._index);
+      if (marker) {
+        map.setView([item.lat, item.lng], 17);
+        marker.openPopup();
+        highlightCard(item._index);
+      } else if (item.link) {
+        window.open(item.link, "_blank");
+      }
+    }
+
+    function fitAll(items) {
+      const withCoords = items.filter(x => x.has_coords);
+      if (!withCoords.length) return;
+      const bounds = L.latLngBounds(withCoords.map(x => [x.lat, x.lng]));
+      map.fitBounds(bounds.pad(0.15));
+    }
+
+    function render() {
+      const query = searchEl.value || searchMobileEl.value;
+      const items = filtered(query);
+
+      markers.forEach(marker => {
+        const show = items.some(i => i._index === marker.item._index);
+        if (show) {
+          if (!group.hasLayer(marker)) group.addLayer(marker);
+        } else {
+          if (group.hasLayer(marker)) group.removeLayer(marker);
+        }
+      });
+
+      listEl.innerHTML = "";
+      items.forEach(item => {
+        const div = document.createElement("div");
+        div.className = "card";
+        div.dataset.index = item._index;
+        div.innerHTML = cardHtml(item);
+        bindCardActions(div, item);
+        div.addEventListener("click", e => { if (e.target.closest("a,button")) return; openItem(item); });
+        listEl.appendChild(div);
+      });
+
+      mobileGrid.innerHTML = "";
+      items.forEach(item => {
+        const div = document.createElement("div");
+        div.className = "card";
+        div.dataset.index = item._index;
+        div.innerHTML = `
+          <div class="title">
+            <span>${esc(item.building_no)} — ${esc(item.hospitality_center_no)}</span>
+            <span class="pill">${esc(item.area)}</span>
+          </div>
+          <div class="mobile-mini-actions">
+            <button class="btn" data-copy="info">نسخ</button>
+            <button class="btn" data-copy="location">موقع</button>
+            <button class="btn" data-edit="1">تحديث</button>
+          </div>
+        `;
+        bindCardActions(div, item);
+        div.addEventListener("click", e => { if (e.target.closest("button")) return; openItem(item); });
+        mobileGrid.appendChild(div);
+      });
+
+      visibleCountEl.textContent = items.length;
+    }
+
+    function fillAreas() {
+      const areas = [...new Set(buildings.map(x => x.area).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'ar'));
+      for (const select of [areaFilterEl, areaFilterMobileEl]) {
+        select.innerHTML = '<option value="الكل">كل المناطق</option>';
+        areas.forEach(area => {
+          const opt = document.createElement("option");
+          opt.value = area;
+          opt.textContent = area;
+          select.appendChild(opt);
+        });
+      }
+    }
+
+    function syncAreaFilters(value) {
+      areaFilterEl.value = value;
+      areaFilterMobileEl.value = value;
+      render();
+    }
+
+    function setLabelMode(mode) {
+      labelMode = mode;
+      showBuildingBtn.classList.toggle("active", mode === "building");
+      showHospitalityBtn.classList.toggle("active", mode === "hospitality");
+      mobileShowBuildingBtn.classList.toggle("active", mode === "building");
+      mobileShowHospitalityBtn.classList.toggle("active", mode === "hospitality");
+      markers.forEach(marker => marker.setIcon(markerIcon(marker.item)));
+    }
+
+    function updateUserLocation(lat, lng, centerMap = false) {
+      userLatLng = { lat, lng };
+      if (!userMarker) {
+        userMarker = L.circleMarker([lat, lng], {
+          radius: 8, color: "#fff", weight: 3, fillColor: "#2563eb", fillOpacity: 1
+        }).addTo(map).bindPopup("موقعك الحالي");
+      } else {
+        userMarker.setLatLng([lat, lng]);
+      }
+      if (centerMap) {
+        map.setView([lat, lng], 15);
+        userMarker.openPopup();
+      }
+    }
+
+    function startLiveLocation(forceCenter = false) {
+      if (!navigator.geolocation) {
+        statusText.textContent = "المتصفح لا يدعم الموقع الحالي.";
+        return;
+      }
+
+      navigator.geolocation.getCurrentPosition(
+        pos => updateUserLocation(pos.coords.latitude, pos.coords.longitude, true),
+        err => { console.log(err); statusText.textContent = "اسمح بإذن الموقع ليظهر موقعك الحالي."; },
+        { enableHighAccuracy:true, timeout:15000, maximumAge:0 }
+      );
+
+      if (geoWatchId !== null) return;
+      geoWatchId = navigator.geolocation.watchPosition(
+        pos => updateUserLocation(pos.coords.latitude, pos.coords.longitude, forceCenter && !userLatLng),
+        err => console.log(err),
+        { enableHighAccuracy:true, maximumAge:5000, timeout:15000 }
+      );
+    }
+
+    async function loadData() {
+      statusText.textContent = "جارِ تحميل البيانات...";
+      try {
+        const res = await fetch(API + "?action=list");
+        const data = await res.json();
+        buildings = data.map(mapRow);
+        fillAreas();
+        rebuildMarkers();
+        render();
+        setLabelMode("building");
+        fitAll(buildings);
+        const ready = buildings.filter(x => x.has_coords).length;
+        statusText.textContent = `تم تحميل ${buildings.length} عمارة، منها ${ready} بإحداثيات.`;
+      } catch (e) {
+        console.error(e);
+        statusText.textContent = "تعذر تحميل البيانات.";
+      }
+    }
+
+    function startEdit(item) {
+      if (!item || !item._rowNumber) {
+        alert("هذا السجل غير مرتبط بصف في الشيت");
+        return;
+      }
+      const pwd = prompt("أدخل كلمة السر");
+      if (!pwd) return;
+      editMode = true;
+      editItem = item;
+      editPassword = pwd;
+      alert("اضغط على الموقع الجديد في الخريطة");
+    }
+
+    function startEditByIndex(index) {
+      const item = buildings.find(x => x._index === index);
+      if (item) startEdit(item);
+    }
+    window.startEditByIndex = startEditByIndex;
+
+    map.on("click", async e => {
+      if (!editMode || !editItem) return;
+      const lat = e.latlng.lat, lng = e.latlng.lng;
+      try {
+        const res = await fetch(API, {
+          method:"POST",
+          headers:{ "Content-Type":"application/json" },
+          body: JSON.stringify({
+            action:"updateLocation",
+            rowNumber: editItem._rowNumber,
+            lat: lat,
+            lng: lng,
+            password: editPassword
+          })
+        });
+        const result = await res.json();
+        if (!result.ok) {
+          alert("فشل التحديث: " + (result.error || "خطأ"));
+          editMode = false;
+          editItem = null;
+          editPassword = "";
+          return;
+        }
+        editItem.lat = lat;
+        editItem.lng = lng;
+        editItem.has_coords = true;
+        editItem.link = `https://www.google.com/maps?q=${lat},${lng}`;
+        rebuildMarkers();
+        render();
+        alert("تم تحديث الموقع بنجاح");
+      } catch {
+        alert("تعذر حفظ التحديث");
+      }
+      editMode = false;
+      editItem = null;
+      editPassword = "";
+    });
+
+    areaFilterEl.addEventListener("change", ()=>syncAreaFilters(areaFilterEl.value));
+    areaFilterMobileEl.addEventListener("change", ()=>syncAreaFilters(areaFilterMobileEl.value));
+    searchEl.addEventListener("input", ()=>{ searchMobileEl.value = searchEl.value; render(); });
+    searchMobileEl.addEventListener("input", ()=>{ searchEl.value = searchMobileEl.value; render(); });
+    fitBtn.addEventListener("click", ()=>fitAll(filtered(searchEl.value || searchMobileEl.value)));
+    showBuildingBtn.addEventListener("click", ()=>setLabelMode("building"));
+    showHospitalityBtn.addEventListener("click", ()=>setLabelMode("hospitality"));
+    mobileShowBuildingBtn.addEventListener("click", ()=>setLabelMode("building"));
+    mobileShowHospitalityBtn.addEventListener("click", ()=>setLabelMode("hospitality"));
+    locateBtn.addEventListener("click", ()=>startLiveLocation(true));
+
+    window.addEventListener("load", async () => {
+      await loadData();
+      startLiveLocation(true);
+    });
+  </script>
 </body>
 </html>
