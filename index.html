@@ -1,239 +1,448 @@
 <!doctype html>
-<html lang="ar" dir="rtl">
+
+<html lang="ar" dir="rtl" data-theme="dark">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>خريطة عماير مكة</title>
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>خريطة عماير مكة — الراجحي</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <style>
-:root{
-  --bg:#f4f6f8; --card:#fff; --text:#1f2937; --muted:#6b7280; --line:#e5e7eb;
-  --pk-bg:#dcfce7; --pk-border:#86efac; --pk-text:#166534;
-  --ng-bg:#dbeafe; --ng-border:#93c5fd; --ng-text:#1d4ed8;
-  --eg-bg:#fee2e2; --eg-border:#fca5a5; --eg-text:#b91c1c;
+/* ══ DARK ══ */
+:root,[data-theme="dark"]{
+  --bg:#090d12;--surf:#161d28;--surf2:#1a2230;--surf-hi:#202a3a;
+  --border:#2a3445;--border-hi:#3a4558;
+  --text:#e8eef7;--text2:#b4bdcc;--muted:#6b7689;
+  --accent:#e8b84a;--accent2:#d4a030;--accent-dim:rgba(232,184,74,.13);--accent-glow:rgba(232,184,74,.32);
+  --eg:#f87171;--eg-bg:rgba(248,113,113,.13);--eg-border:rgba(248,113,113,.38);--eg-glow:rgba(248,113,113,.35);
+  --ng:#60a5fa;--ng-bg:rgba(96,165,250,.13);--ng-border:rgba(96,165,250,.38);--ng-glow:rgba(96,165,250,.35);
+  --pk:#4ade80;--pk-bg:rgba(74,222,128,.13);--pk-border:rgba(74,222,128,.38);--pk-glow:rgba(74,222,128,.35);
+  --shadow:0 8px 40px rgba(0,0,0,.6);
+  --radius:16px;--radius-sm:10px;--rpill:999px;--font:'Cairo',Tahoma,Arial,sans-serif;
 }
-*{box-sizing:border-box}
-body{margin:0;font-family:Tahoma,Arial,sans-serif;background:var(--bg);color:var(--text)}
-.app{display:grid;grid-template-columns:360px 1fr;gap:14px;height:100vh;padding:14px}
-.sidebar,.mapwrap{background:var(--card);border:1px solid var(--line);border-radius:18px;overflow:hidden;min-height:0}
-.sidebar{display:flex;flex-direction:column}
-.head{padding:18px 18px 10px;border-bottom:1px solid var(--line)}
-h1{margin:0 0 8px;font-size:24px}
-.sub{color:var(--muted);font-size:13px;line-height:1.7}
-.controls{padding:12px 16px;border-bottom:1px solid var(--line);display:grid;gap:10px}
-input{width:100%;border:1px solid #d1d5db;border-radius:12px;padding:12px;font-size:14px;background:#fff}
-.stats,.toggle-row,.filter-row{display:flex;gap:8px;flex-wrap:wrap}
-.badge{border-radius:999px;padding:6px 10px;font-size:12px;border:1px solid var(--line);background:#fff}
-.badge.pk{background:var(--pk-bg);border-color:var(--pk-border);color:var(--pk-text)}
-.badge.ng{background:var(--ng-bg);border-color:var(--ng-border);color:var(--ng-text)}
-.badge.eg{background:var(--eg-bg);border-color:var(--eg-border);color:var(--eg-text)}
-.toggle,.filter-btn{border:1px solid var(--line);background:#fff;color:var(--text);border-radius:999px;padding:8px 12px;font-size:13px;cursor:pointer}
-.toggle.active{background:#0f766e;color:#fff;border-color:#0f766e}
-.filter-btn.active{color:#111827;box-shadow:0 4px 14px rgba(0,0,0,.06)}
-.filter-btn.all.active{background:#eef2ff;border-color:#c7d2fe}
-.filter-btn.pk.active{background:var(--pk-bg);border-color:var(--pk-border);color:var(--pk-text)}
-.filter-btn.ng.active{background:var(--ng-bg);border-color:var(--ng-border);color:var(--ng-text)}
-.filter-btn.eg.active{background:var(--eg-bg);border-color:var(--eg-border);color:var(--eg-text)}
-.list{overflow:auto;padding:8px}
-.item{border:1px solid var(--line);border-radius:16px;padding:12px;margin:8px;cursor:pointer;background:#fff}
-.item:hover,.item.active{box-shadow:0 8px 18px rgba(15,118,110,.12);background:#f8fffe}
-.item.pk{background:var(--pk-bg);border-color:var(--pk-border)}
-.item.ng{background:var(--ng-bg);border-color:var(--ng-border)}
-.item.eg{background:var(--eg-bg);border-color:var(--eg-border)}
-.title{font-weight:700;margin-bottom:6px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-.pill{display:inline-block;border-radius:999px;padding:4px 8px;font-size:11px;font-weight:700;background:rgba(255,255,255,.85);border:1px solid rgba(0,0,0,.08)}
-.meta{color:#334155;font-size:12px;line-height:1.9}
-.actions{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
-.btn{display:inline-block;text-decoration:none;border-radius:10px;padding:8px 10px;font-size:13px;border:1px solid rgba(0,0,0,.08);color:var(--text);background:rgba(255,255,255,.92);cursor:pointer}
-.btn.primary{background:#0f766e;color:#fff;border-color:#0f766e}
-.mapbar{padding:12px 14px;border-bottom:1px solid var(--line);display:flex;gap:8px;align-items:center;justify-content:space-between;flex-wrap:wrap}
-.mapnote{color:var(--muted);font-size:13px}
-#map{height:calc(100vh - 84px);width:100%}
-.leaflet-popup-content{font-family:Tahoma,Arial,sans-serif;line-height:1.8}
-.popup-title{font-weight:700;margin-bottom:6px}
-.popup-meta{color:#4b5563;font-size:12px}
+/* ══ LIGHT ══ */
+[data-theme="light"]{
+  --bg:#f0ede6;--surf:#ffffff;--surf2:#ffffff;--surf-hi:#f7f4ee;
+  --border:#ddd5c4;--border-hi:#c8bfad;
+  --text:#1c1812;--text2:#4a4030;--muted:#8a7d6a;
+  --accent:#b8860e;--accent2:#9a720a;--accent-dim:rgba(184,134,14,.12);--accent-glow:rgba(184,134,14,.28);
+  --eg:#dc2626;--eg-bg:rgba(220,38,38,.1);--eg-border:rgba(220,38,38,.35);--eg-glow:rgba(220,38,38,.28);
+  --ng:#2563eb;--ng-bg:rgba(37,99,235,.1);--ng-border:rgba(37,99,235,.35);--ng-glow:rgba(37,99,235,.28);
+  --pk:#16a34a;--pk-bg:rgba(22,163,74,.1);--pk-border:rgba(22,163,74,.35);--pk-glow:rgba(22,163,74,.28);
+  --shadow:0 8px 32px rgba(0,0,0,.15);
+}
+[data-theme="light"] body{background-image:radial-gradient(ellipse at 90% 0%,rgba(184,134,14,.07),transparent 45%),radial-gradient(ellipse at 5% 95%,rgba(37,99,235,.04),transparent 45%)}
+
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:var(–font);background:var(–bg);color:var(–text);min-height:100vh;overflow:hidden;transition:background .35s,color .35s;
+background-image:radial-gradient(ellipse at 90% 0%,rgba(232,184,74,.09),transparent 45%),radial-gradient(ellipse at 5% 95%,rgba(96,165,250,.06),transparent 45%);
+background-attachment:fixed}
+
+/* ══ LAYOUT ══ */
+.app{display:grid;grid-template-columns:390px 1fr;height:100vh}
+
+/* ══ SIDEBAR ══ */
+.sidebar{display:flex;flex-direction:column;background:var(–surf);border-left:1px solid var(–border);overflow:hidden;z-index:10;transition:background .35s,border-color .35s}
+
+.head{padding:20px 18px 16px;border-bottom:1px solid var(–border);position:relative;overflow:hidden;
+background:linear-gradient(135deg,var(–surf-hi) 0%,var(–surf) 100%)}
+[data-theme=“dark”] .head::before{content:’’;position:absolute;inset:0;background:radial-gradient(circle at 88% 18%,rgba(232,184,74,.18),transparent 55%);pointer-events:none}
+.head::after{content:’’;position:absolute;bottom:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(–accent-glow),transparent)}
+
+.theme-btn{position:absolute;top:16px;left:16px;width:36px;height:36px;border-radius:10px;background:var(–surf-hi);border:1px solid var(–border);display:flex;align-items:center;justify-content:center;font-size:17px;cursor:pointer;transition:all .2s;z-index:2}
+.theme-btn:hover{border-color:var(–accent);transform:scale(1.1)}
+
+.brand{display:flex;align-items:center;gap:12px;margin-bottom:14px}
+.brand-icon{width:46px;height:46px;border-radius:13px;flex-shrink:0;background:linear-gradient(135deg,var(–accent),var(–accent2));display:flex;align-items:center;justify-content:center;font-size:24px;box-shadow:0 6px 22px var(–accent-glow),inset 0 1px 0 rgba(255,255,255,.25);transition:transform .2s}
+.brand-icon:hover{transform:scale(1.06)}
+.brand-text h1{font-size:18px;font-weight:900;letter-spacing:-.3px;line-height:1.2}
+.brand-text p{font-size:11px;color:var(–muted);margin-top:3px;font-weight:600}
+
+.stats-row{display:flex;gap:6px;flex-wrap:wrap}
+.stat-pill{background:rgba(0,0,0,.12);border:1px solid var(–border);border-radius:var(–rpill);padding:5px 11px;font-size:11px;color:var(–text2);display:flex;align-items:center;gap:6px;font-weight:600}
+[data-theme=“light”] .stat-pill{background:rgba(0,0,0,.05)}
+.stat-pill b{color:var(–accent);font-weight:800;font-size:12px}
+.stat-pill.eg-s{border-color:var(–eg-border);background:var(–eg-bg);color:var(–eg)}
+.stat-pill.ng-s{border-color:var(–ng-border);background:var(–ng-bg);color:var(–ng)}
+.stat-pill.pk-s{border-color:var(–pk-border);background:var(–pk-bg);color:var(–pk)}
+.dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;box-shadow:0 0 7px currentColor}
+.dot.eg{background:var(–eg)}.dot.ng{background:var(–ng)}.dot.pk{background:var(–pk)}
+
+/* ══ CONTROLS ══ */
+.controls{padding:14px 16px;border-bottom:1px solid var(–border);display:flex;flex-direction:column;gap:11px}
+.srch{position:relative}
+.srch-icon{position:absolute;right:13px;top:50%;transform:translateY(-50%);color:var(–muted);font-size:16px;pointer-events:none;transition:color .2s}
+.srch:focus-within .srch-icon{color:var(–accent)}
+input{width:100%;background:var(–surf-hi);border:1px solid var(–border);border-radius:var(–radius);padding:11px 40px 11px 14px;font-size:13px;font-family:var(–font);color:var(–text);outline:none;font-weight:500;transition:all .25s}
+input:focus{border-color:var(–accent);box-shadow:0 0 0 3px var(–accent-glow)}
+input::placeholder{color:var(–muted);font-weight:400}
+
+.flabel{font-size:10px;letter-spacing:1.5px;color:var(–muted);font-weight:800;text-transform:uppercase;display:flex;align-items:center;gap:6px;margin-bottom:6px}
+.flabel::before{content:’’;width:3px;height:12px;background:var(–accent);border-radius:2px}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{background:var(–surf-hi);border:1px solid var(–border);border-radius:var(–rpill);padding:7px 14px;font-size:12px;font-family:var(–font);color:var(–text2);cursor:pointer;transition:all .25s cubic-bezier(.4,0,.2,1);font-weight:700;display:inline-flex;align-items:center;gap:7px}
+.chip::before{content:’’;width:7px;height:7px;border-radius:50%;background:var(–border-hi);transition:all .2s;flex-shrink:0}
+.chip[data-filter=“الكل”]::before{display:none}
+.chip.eg-chip::before{background:var(–eg);box-shadow:0 0 7px var(–eg-glow)}
+.chip.ng-chip::before{background:var(–ng);box-shadow:0 0 7px var(–ng-glow)}
+.chip.pk-chip::before{background:var(–pk);box-shadow:0 0 7px var(–pk-glow)}
+.chip:hover{border-color:var(–accent);color:var(–accent);transform:translateY(-1px)}
+.chip.active{background:var(–accent-dim);border-color:var(–accent);color:var(–accent);font-weight:800;box-shadow:0 3px 14px var(–accent-glow)}
+.chip.eg-chip.active{background:var(–eg-bg);border-color:var(–eg);color:var(–eg);box-shadow:0 3px 14px var(–eg-glow)}
+.chip.ng-chip.active{background:var(–ng-bg);border-color:var(–ng);color:var(–ng);box-shadow:0 3px 14px var(–ng-glow)}
+.chip.pk-chip.active{background:var(–pk-bg);border-color:var(–pk);color:var(–pk);box-shadow:0 3px 14px var(–pk-glow)}
+
+.trow{display:flex;gap:6px}
+.toggle{background:var(–surf-hi);border:1px solid var(–border);border-radius:var(–radius-sm);padding:8px 10px;font-size:11px;font-family:var(–font);color:var(–text2);cursor:pointer;transition:all .2s;font-weight:700;flex:1;text-align:center}
+.toggle:hover{border-color:var(–accent);color:var(–accent)}
+.toggle.active{background:var(–accent-dim);border-color:var(–accent);color:var(–accent);box-shadow:0 2px 10px var(–accent-glow)}
+
+/* STATUS */
+.sbar{padding:7px 16px;border-bottom:1px solid var(–border);display:flex;align-items:center;gap:7px;font-size:11px;color:var(–muted);min-height:32px;background:var(–surf-hi)}
+.sdot{width:7px;height:7px;border-radius:50%;background:var(–muted);flex-shrink:0;animation:blink 2s infinite}
+.sdot.ok{background:var(–pk);animation:none;box-shadow:0 0 6px var(–pk-glow)}
+.sdot.err{background:var(–eg);animation:none}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.25}}
+
+/* LIST */
+.list{overflow-y:auto;padding:10px;flex:1;scrollbar-width:thin;scrollbar-color:var(–border) transparent}
+.list::-webkit-scrollbar{width:4px}
+.list::-webkit-scrollbar-thumb{background:var(–border);border-radius:2px}
+
+/* ══ CARDS — ALWAYS COLORED ══ */
+.card{border:1px solid var(–border);border-radius:var(–radius);padding:14px 16px;margin-bottom:10px;cursor:pointer;transition:all .3s cubic-bezier(.4,0,.2,1);position:relative;overflow:hidden;animation:slideIn .28s ease both}
+.card::before{content:’’;position:absolute;right:0;top:0;bottom:0;width:4px;transition:all .3s}
+
+.card.eg{background:linear-gradient(135deg,rgba(248,113,113,.1) 0%,var(–surf2) 45%);border-color:var(–eg-border)}
+.card.ng{background:linear-gradient(135deg,rgba(96,165,250,.1) 0%,var(–surf2) 45%);border-color:var(–ng-border)}
+.card.pk{background:linear-gradient(135deg,rgba(74,222,128,.1) 0%,var(–surf2) 45%);border-color:var(–pk-border)}
+.card.eg::before{background:var(–eg);box-shadow:0 0 8px var(–eg-glow)}
+.card.ng::before{background:var(–ng);box-shadow:0 0 8px var(–ng-glow)}
+.card.pk::before{background:var(–pk);box-shadow:0 0 8px var(–pk-glow)}
+
+.card.eg:hover{background:var(–eg-bg);border-color:var(–eg);box-shadow:0 8px 28px var(–eg-glow);transform:translateX(-3px)}
+.card.ng:hover{background:var(–ng-bg);border-color:var(–ng);box-shadow:0 8px 28px var(–ng-glow);transform:translateX(-3px)}
+.card.pk:hover{background:var(–pk-bg);border-color:var(–pk);box-shadow:0 8px 28px var(–pk-glow);transform:translateX(-3px)}
+.card.eg:hover::before{box-shadow:0 0 18px var(–eg-glow)}
+.card.ng:hover::before{box-shadow:0 0 18px var(–ng-glow)}
+.card.pk:hover::before{box-shadow:0 0 18px var(–pk-glow)}
+
+.card.eg.active{background:linear-gradient(135deg,rgba(248,113,113,.22),var(–surf2) 60%);border-color:var(–eg);box-shadow:0 8px 32px var(–eg-glow)}
+.card.ng.active{background:linear-gradient(135deg,rgba(96,165,250,.22),var(–surf2) 60%);border-color:var(–ng);box-shadow:0 8px 32px var(–ng-glow)}
+.card.pk.active{background:linear-gradient(135deg,rgba(74,222,128,.22),var(–surf2) 60%);border-color:var(–pk);box-shadow:0 8px 32px var(–pk-glow)}
+.card.eg.active::before{box-shadow:0 0 16px var(–eg-glow)}
+.card.ng.active::before{box-shadow:0 0 16px var(–ng-glow)}
+.card.pk.active::before{box-shadow:0 0 16px var(–pk-glow)}
+
+@keyframes slideIn{from{opacity:0;transform:translateX(10px)}to{opacity:1;transform:translateX(0)}}
+
+.card-hd{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:10px}
+.card-title{font-size:14.5px;font-weight:800;color:var(–text);line-height:1.3;letter-spacing:-.2px}
+.cbadges{display:flex;gap:4px;flex-shrink:0;flex-wrap:wrap}
+.badge{border-radius:var(–rpill);padding:3px 9px;font-size:10px;font-weight:800;border:1px solid;display:inline-flex;align-items:center;gap:4px}
+.badge.eg{color:var(–eg);border-color:var(–eg-border);background:var(–eg-bg)}
+.badge.ng{color:var(–ng);border-color:var(–ng-border);background:var(–ng-bg)}
+.badge.pk{color:var(–pk);border-color:var(–pk-border);background:var(–pk-bg)}
+.badge.site{color:var(–accent);border-color:var(–accent-glow);background:var(–accent-dim)}
+
+.card-meta{display:grid;grid-template-columns:1fr 1fr;gap:5px 12px;font-size:12px;color:var(–text2);margin-bottom:12px;padding:10px 12px;background:rgba(0,0,0,.18);border-radius:var(–radius-sm);border:1px solid var(–border)}
+[data-theme=“light”] .card-meta{background:rgba(0,0,0,.04)}
+.card-meta span{display:flex;align-items:center;gap:5px}
+.card-meta b{color:var(–text);font-weight:700}
+.card-meta .no-coords{color:#f59e0b;grid-column:1/-1;font-size:11px}
+
+.cactions{display:flex;gap:6px;flex-wrap:wrap}
+.btn{display:inline-flex;align-items:center;gap:5px;text-decoration:none;border-radius:var(–radius-sm);padding:7px 12px;font-size:11px;font-family:var(–font);font-weight:700;border:1px solid var(–border);color:var(–text2);background:var(–surf);cursor:pointer;transition:all .2s}
+.btn:hover{border-color:var(–accent);color:var(–accent);transform:translateY(-1px)}
+.btn.primary{background:linear-gradient(135deg,var(–accent),var(–accent2));color:#0a0e14;border-color:transparent;font-weight:800;box-shadow:0 4px 14px var(–accent-glow)}
+[data-theme=“light”] .btn.primary{color:#fff}
+.btn.primary:hover{box-shadow:0 8px 24px var(–accent-glow);transform:translateY(-2px)}
+.btn.danger{color:var(–eg);border-color:var(–eg-border)}
+.btn.danger:hover{background:var(–eg-bg);border-color:var(–eg)}
+
+/* ══ MAP ══ */
+.mapwrap{display:flex;flex-direction:column;position:relative}
+.mapbar{padding:12px 16px;background:var(–surf);border-bottom:1px solid var(–border);display:flex;align-items:center;justify-content:space-between;gap:10px;z-index:5;position:relative;transition:background .35s}
+.mapbar::after{content:’’;position:absolute;bottom:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(–accent-glow),transparent)}
+.mapnote{font-size:11.5px;color:var(–text2);display:flex;align-items:center;gap:6px;font-weight:600}
+.mtools{display:flex;gap:6px}
+#map{flex:1;transition:filter .35s}
+
+/* POPUP */
+.leaflet-popup-content-wrapper{background:var(–surf) !important;border:1px solid var(–border-hi) !important;border-radius:var(–radius) !important;color:var(–text) !important;box-shadow:var(–shadow) !important;font-family:var(–font) !important;padding:0 !important}
+.leaflet-popup-content{margin:0 !important;font-family:var(–font) !important}
+.leaflet-popup-tip{background:var(–surf) !important}
+.leaflet-popup-close-button{color:var(–muted) !important;top:10px !important;left:10px !important;right:auto !important;font-size:20px !important}
+.leaflet-popup-close-button:hover{color:var(–accent) !important}
+.pu-inner{padding:16px;min-width:240px}
+.pu-title{font-size:15px;font-weight:800;color:var(–text);margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid var(–border);letter-spacing:-.2px}
+.pu-grid{display:grid;grid-template-columns:1fr 1fr;gap:5px 12px;font-size:12px;color:var(–text2);margin-bottom:14px;padding:10px;background:rgba(0,0,0,.15);border-radius:var(–radius-sm);border:1px solid var(–border)}
+[data-theme=“light”] .pu-grid{background:rgba(0,0,0,.04)}
+.pu-grid span b{color:var(–text);font-weight:700}
+.pu-grid span.full{grid-column:1/-1}
+.pu-actions{display:flex;gap:6px;flex-wrap:wrap}
+
+/* MARKERS */
 .label-marker{background:transparent;border:none}
-.label-wrap{display:flex;align-items:center;gap:6px;transform:translate(-50%,-50%);pointer-events:auto}
-.label-dot{width:14px;height:14px;border:2px solid #fff;border-radius:999px;box-shadow:0 2px 8px rgba(0,0,0,.22);flex:0 0 auto}
-.label-text{background:rgba(255,255,255,.97);border-radius:999px;padding:4px 8px;font-size:12px;font-weight:700;line-height:1.2;white-space:nowrap;box-shadow:0 4px 10px rgba(0,0,0,.08)}
-.mobile-cards{display:none;padding:12px;gap:10px;background:var(--bg)}
-.mobile-cards .grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
-.mobile-cards .item{margin:0;padding:10px 8px;border-radius:14px;min-height:104px}
-.mobile-cards .title{margin:0 0 6px;justify-content:space-between;align-items:flex-start;gap:6px}
-.mobile-cards .title span:first-child{font-size:12px;line-height:1.5}
-.mobile-cards .meta,.mobile-cards .actions{display:none}
-.mobile-mini-actions{display:flex;gap:6px;margin-top:6px;flex-wrap:wrap}
-.mobile-mini-actions .btn{padding:6px 8px;font-size:11px}
-.distance-badge{display:inline-block;margin-top:4px;border-radius:999px;padding:3px 7px;font-size:10px;font-weight:700;background:rgba(255,255,255,.85);border:1px solid rgba(0,0,0,.08)}
-@media (max-width:900px){
-  .app{display:flex;flex-direction:column;height:auto;padding:10px}
-  .sidebar{display:none}
-  .mapwrap{order:1}
-  #map{height:62vh}
-  .mobile-cards{display:grid;order:2}
-  .label-text{font-size:11px;padding:3px 7px}
-  .mobile-cards .grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+.label-wrap{display:flex;align-items:center;gap:5px;transform:translate(-50%,-50%);pointer-events:auto;filter:drop-shadow(0 2px 8px rgba(0,0,0,.55))}
+.label-dot{width:12px;height:12px;border:2.5px solid rgba(255,255,255,.9);border-radius:50%;flex-shrink:0}
+.label-text{border-radius:var(–rpill);padding:3px 9px;font-size:11px;font-weight:800;font-family:var(–font);white-space:nowrap;border:1px solid;line-height:1.3;background:var(–surf)}
+
+/* SKELETON */
+.skel{background:linear-gradient(90deg,var(–surf-hi) 25%,var(–border) 50%,var(–surf-hi) 75%);background-size:200% 100%;animation:shimmer 1.6s infinite;border-radius:var(–radius-sm)}
+@keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+.skel-card{background:var(–surf-hi);border:1px solid var(–border);border-radius:var(–radius);padding:14px;margin-bottom:10px}
+.skel-line{height:12px;margin-bottom:8px}
+.skel-line.w70{width:70%}.skel-line.w50{width:50%}.skel-line.w35{width:35%}
+
+/* EMPTY */
+.empty{text-align:center;padding:40px 20px;color:var(–muted)}
+.empty-ico{font-size:36px;margin-bottom:12px;opacity:.5}
+
+/* LOCATION PULSE */
+@keyframes locPulse{0%{transform:translate(-50%,-50%) scale(1);opacity:.85}100%{transform:translate(-50%,-50%) scale(4.2);opacity:0}}
+
+/* ══ MOBILE ══ */
+.mob-sec{display:none}
+
+@media(max-width:900px){
+body{overflow:auto}
+.app{display:flex;flex-direction:column;height:auto}
+.sidebar{display:none}
+.mapwrap{height:58vh;order:1}
+#map{height:100%}
+.mapbar .mtools{display:none}
+
+.mob-sec{display:flex;flex-direction:column;gap:10px;padding:14px;order:2;background:var(–bg)}
+
+.mob-ctrl{background:var(–surf);border:1px solid var(–border);border-radius:var(–radius);padding:14px;display:flex;flex-direction:column;gap:12px;transition:background .35s,border-color .35s}
+
+.mob-top{display:flex;align-items:center;gap:10px}
+.mob-title{font-size:16px;font-weight:900;flex:1}
+.mob-theme{width:36px;height:36px;border-radius:10px;background:var(–surf-hi);border:1px solid var(–border);display:flex;align-items:center;justify-content:center;font-size:17px;cursor:pointer;transition:all .2s;flex-shrink:0}
+.mob-theme:hover{border-color:var(–accent)}
+
+.mob-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+
+/* MINI CARDS — ALWAYS COLORED */
+.mini-card{border:1px solid var(–border);border-radius:var(–radius);padding:12px;cursor:pointer;transition:all .25s cubic-bezier(.4,0,.2,1);position:relative;overflow:hidden}
+.mini-card::before{content:’’;position:absolute;right:0;top:0;bottom:0;width:3px;transition:all .25s}
+.mini-card.eg{background:linear-gradient(135deg,rgba(248,113,113,.1),var(–surf2) 50%);border-color:var(–eg-border)}
+.mini-card.eg::before{background:var(–eg);box-shadow:0 0 7px var(–eg-glow)}
+.mini-card.ng{background:linear-gradient(135deg,rgba(96,165,250,.1),var(–surf2) 50%);border-color:var(–ng-border)}
+.mini-card.ng::before{background:var(–ng);box-shadow:0 0 7px var(–ng-glow)}
+.mini-card.pk{background:linear-gradient(135deg,rgba(74,222,128,.1),var(–surf2) 50%);border-color:var(–pk-border)}
+.mini-card.pk::before{background:var(–pk);box-shadow:0 0 7px var(–pk-glow)}
+.mini-card.eg:hover,.mini-card.eg.active{background:var(–eg-bg);border-color:var(–eg);box-shadow:0 6px 22px var(–eg-glow);transform:translateY(-2px)}
+.mini-card.ng:hover,.mini-card.ng.active{background:var(–ng-bg);border-color:var(–ng);box-shadow:0 6px 22px var(–ng-glow);transform:translateY(-2px)}
+.mini-card.pk:hover,.mini-card.pk.active{background:var(–pk-bg);border-color:var(–pk);box-shadow:0 6px 22px var(–pk-glow);transform:translateY(-2px)}
+
+.mini-id{font-size:13px;font-weight:800;color:var(–text);margin-bottom:4px;letter-spacing:-.2px;line-height:1.3}
+.mini-nat{font-size:10.5px;color:var(–text2);margin-bottom:8px;font-weight:600}
+.mini-actions{display:flex;gap:5px}
+.mini-btn{flex:1;background:var(–surf-hi);border:1px solid var(–border);border-radius:7px;padding:5px 4px;font-size:10px;font-family:var(–font);font-weight:700;color:var(–text2);cursor:pointer;text-align:center;transition:all .2s}
+.mini-btn:hover{color:var(–accent);border-color:var(–accent);background:var(–accent-dim)}
+
+.loc-banner{display:flex;align-items:center;gap:10px;border:1px solid var(–border);border-radius:var(–radius);padding:12px 14px;font-size:12.5px;color:var(–text2);font-weight:600;transition:all .3s;background:var(–surf-hi)}
+.loc-banner.ok{border-color:var(–pk-border);background:linear-gradient(135deg,var(–pk-bg),var(–surf) 70%);color:var(–pk);box-shadow:0 4px 18px var(–pk-glow)}
+.loc-banner.denied{border-color:var(–eg-border);background:linear-gradient(135deg,var(–eg-bg),var(–surf) 70%);color:var(–eg);box-shadow:0 4px 18px var(–eg-glow)}
+.loc-btn{margin-right:auto;background:var(–surf);border:1px solid var(–border);border-radius:var(–radius-sm);padding:7px 12px;font-size:11px;font-family:var(–font);font-weight:800;color:var(–text);cursor:pointer;white-space:nowrap;flex-shrink:0;transition:all .2s}
+.loc-btn:hover{border-color:var(–accent);color:var(–accent)}
+
+.hint-txt{font-size:12px;color:var(–muted);text-align:center;padding:20px}
 }
-@media (max-width:420px){
-  .mobile-cards .grid{grid-template-columns:repeat(2,minmax(0,1fr))}
-}
+.hidden{display:none !important}
 </style>
+
 </head>
 <body>
 <div class="app">
-  <aside class="sidebar">
-    <div class="head">
-      <h1>خريطة عماير مكة</h1>
-      <div class="sub">هذه الخريطه تعرض مواقع مساكن حجاج شركة الراجحي بمدينة مكة المكرمة .</div>
-    </div>
-    <div class="controls">
-      <input id="search" placeholder="ابحث بالاسم أو رقم التصريح أو رقم التواصل">
-      <div class="filter-row">
-        <button class="filter-btn all active" data-filter="الكل">الكل</button>
-        <button class="filter-btn eg" data-filter="مصر">مصر</button>
-        <button class="filter-btn ng" data-filter="النيجر">النيجر</button>
-        <button class="filter-btn pk" data-filter="باكستان">باكستان</button>
-      </div>
-      <div class="toggle-row">
-        <button class="toggle" id="showName">إظهار الاسم</button>
-        <button class="toggle active" id="showPermit">إظهار رقم التصريح</button>
-        <button class="toggle" id="fitBtn">ملاءمة الظاهر</button>
-      </div>
-      <div class="stats">
-        <span class="badge">الظاهر الآن: <b id="visibleCount">0</b></span>
-        <span class="badge">على الخريطة: <b id="mapCount">0</b></span>
-        <span class="badge pk">باكستان</span>
-        <span class="badge ng">النيجر</span>
-        <span class="badge eg">مصر</span>
-      </div>
-    </div>
-    <div class="list" id="list"></div>
-  </aside>
 
-  <main class="mapwrap">
-    <div class="mapbar">
-      <div class="mapnote">لضمان عمل الخريطة بالشكل المطلوب الرجاء السماح بخدمات الموقع .</div>
-      <div class="toggle-row">
-        <button class="filter-btn all active" data-filter="الكل" data-mobile-filter="1">الكل</button>
-        <button class="filter-btn eg" data-filter="مصر" data-mobile-filter="1">مصر</button>
-        <button class="filter-btn ng" data-filter="النيجر" data-mobile-filter="1">النيجر</button>
-        <button class="filter-btn pk" data-filter="باكستان" data-mobile-filter="1">باكستان</button>
-        <button class="toggle" id="mobileShowName">الاسم</button>
-        <button class="toggle active" id="mobileShowPermit">رقم التصريح</button>
-        <button class="toggle" id="locateBtn">موقعي</button>
+<!-- ══ SIDEBAR ══ -->
+
+<aside class="sidebar">
+  <div class="head">
+    <button class="theme-btn" id="themeBtn">🌙</button>
+    <div class="brand">
+      <div class="brand-icon">🏢</div>
+      <div class="brand-text">
+        <h1>خريطة عماير مكة</h1>
+        <p>مساكن حجاج شركة الراجحي — مكة المكرمة</p>
       </div>
     </div>
-    <div id="map"></div>
-  </main>
-
-  <section class="mobile-cards">
-    <input id="searchMobile" placeholder="ابحث بالاسم أو رقم التصريح أو رقم التواصل">
-    <div class="stats">
-      <span class="badge">الظاهر الآن: <b id="visibleCountMobile">0</b></span>
-      <span class="badge">على الخريطة: <b id="mapCountMobile">0</b></span>
-      <span class="badge pk">باكستان</span>
-      <span class="badge ng">النيجر</span>
-      <span class="badge eg">مصر</span>
+    <div class="stats-row">
+      <span class="stat-pill">الظاهر: <b id="cnt">0</b></span>
+      <span class="stat-pill">على الخريطة: <b id="mapCnt">0</b></span>
+      <span class="stat-pill eg-s"><span class="dot eg"></span>مصر</span>
+      <span class="stat-pill ng-s"><span class="dot ng"></span>النيجر</span>
+      <span class="stat-pill pk-s"><span class="dot pk"></span>باكستان</span>
     </div>
-    <div id="mobileList" class="grid"></div>
-  </section>
+  </div>
+
+  <div class="controls">
+    <div class="srch">
+      <span class="srch-icon">⌕</span>
+      <input id="search" type="text" placeholder="ابحث بالاسم أو رقم التصريح أو رقم التواصل">
+    </div>
+    <div>
+      <div class="flabel">الجنسية</div>
+      <div class="chips" id="filterD">
+        <button class="chip active" data-filter="الكل">الكل</button>
+        <button class="chip eg-chip" data-filter="مصر">مصر</button>
+        <button class="chip ng-chip" data-filter="النيجر">النيجر</button>
+        <button class="chip pk-chip" data-filter="باكستان">باكستان</button>
+      </div>
+    </div>
+    <div class="trow">
+      <button class="toggle" id="showName">إظهار الاسم</button>
+      <button class="toggle active" id="showPermit">رقم التصريح</button>
+      <button class="toggle" id="fitBtn">ملاءمة الظاهر</button>
+    </div>
+  </div>
+
+  <div class="sbar">
+    <div class="sdot" id="sdot"></div>
+    <span id="stxt">جارِ تحميل البيانات...</span>
+  </div>
+
+  <div class="list" id="list">
+    <div class="skel-card"><div class="skel skel-line w70"></div><div class="skel skel-line w50"></div><div class="skel skel-line w35"></div></div>
+    <div class="skel-card"><div class="skel skel-line w50"></div><div class="skel skel-line w70"></div><div class="skel skel-line w35"></div></div>
+    <div class="skel-card"><div class="skel skel-line w70"></div><div class="skel skel-line w35"></div><div class="skel skel-line w50"></div></div>
+  </div>
+</aside>
+
+<!-- ══ MAP ══ -->
+
+<main class="mapwrap">
+  <div class="mapbar">
+    <div class="mapnote">📍 اسمح بصلاحية الموقع لعرض المسافات</div>
+    <div class="mtools">
+      <button class="chip active" data-filter-map="الكل">الكل</button>
+      <button class="chip eg-chip" data-filter-map="مصر">مصر</button>
+      <button class="chip ng-chip" data-filter-map="النيجر">النيجر</button>
+      <button class="chip pk-chip" data-filter-map="باكستان">باكستان</button>
+      <button class="toggle" id="mShowName">الاسم</button>
+      <button class="toggle active" id="mShowPermit">التصريح</button>
+      <button class="toggle" id="locateBtn">📍 موقعي</button>
+    </div>
+  </div>
+  <div id="map"></div>
+</main>
+
+<!-- ══ MOBILE ══ -->
+
+<section class="mob-sec">
+  <div id="locBanner" class="loc-banner">
+    <span id="locTxt">📍 اضغط لتحديد موقعك وعرض المسافات</span>
+    <button class="loc-btn" id="locBtn">تحديد الموقع</button>
+  </div>
+
+  <div class="mob-ctrl">
+    <div class="mob-top">
+      <span class="mob-title">🏢 خريطة عماير مكة</span>
+      <button class="mob-theme" id="themeBtnMob">🌙</button>
+    </div>
+    <div class="srch">
+      <span class="srch-icon">⌕</span>
+      <input id="searchM" type="text" placeholder="ابحث...">
+    </div>
+    <div>
+      <div class="flabel">الجنسية</div>
+      <div class="chips" id="filterM">
+        <button class="chip active" data-filter-mob="الكل">الكل</button>
+        <button class="chip eg-chip" data-filter-mob="مصر">مصر</button>
+        <button class="chip ng-chip" data-filter-mob="النيجر">النيجر</button>
+        <button class="chip pk-chip" data-filter-mob="باكستان">باكستان</button>
+      </div>
+    </div>
+    <div class="trow">
+      <button class="toggle" id="mShowNameMob">الاسم</button>
+      <button class="toggle active" id="mShowPermitMob">التصريح</button>
+    </div>
+    <div class="stats-row">
+      <span class="stat-pill">الظاهر: <b id="cntM">0</b></span>
+      <span class="stat-pill">على الخريطة: <b id="mapCntM">0</b></span>
+    </div>
+  </div>
+
+  <div class="mob-grid" id="mobGrid"></div>
+  <div class="hint-txt hidden" id="hint"></div>
+</section>
 </div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+
 <script>
 const API = "https://script.google.com/macros/s/AKfycbyr3jVbbcbBVbG2ZY3aU2vjr-Zp-OG9UtJzZjKOzJSvGARmKxx8WBPfZSQBjERfcDhw-Q/exec";
 
+/* ══ THEME ══ */
+const DARK_TILE  = "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png";
+const LIGHT_TILE = "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png";
+let isDark = true;
+let tileLayer = null;
+
 const map = L.map("map", { zoomControl: true }).setView([21.41, 39.87], 12);
-L.tileLayer("https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png", {
-  maxZoom: 19,
-  attribution: "&copy; OpenStreetMap"
-}).addTo(map);
+tileLayer = L.tileLayer(DARK_TILE, { maxZoom: 19, attribution: "© OpenStreetMap © CARTO" }).addTo(map);
 
-const listEl = document.getElementById("list");
-const mobileListEl = document.getElementById("mobileList");
-const searchEl = document.getElementById("search");
-const searchMobileEl = document.getElementById("searchMobile");
-const visibleCountEl = document.getElementById("visibleCount");
-const visibleCountMobileEl = document.getElementById("visibleCountMobile");
-const mapCountEl = document.getElementById("mapCount");
-const mapCountMobileEl = document.getElementById("mapCountMobile");
-const showNameBtn = document.getElementById("showName");
-const showPermitBtn = document.getElementById("showPermit");
-const mobileShowNameBtn = document.getElementById("mobileShowName");
-const mobileShowPermitBtn = document.getElementById("mobileShowPermit");
-const fitBtn = document.getElementById("fitBtn");
-const locateBtn = document.getElementById("locateBtn");
+function setTheme(dark) {
+  isDark = dark;
+  document.documentElement.setAttribute("data-theme", dark ? "dark" : "light");
+  const ico = dark ? "🌙" : "☀️";
+  document.getElementById("themeBtn").textContent = ico;
+  document.getElementById("themeBtnMob").textContent = ico;
+  map.removeLayer(tileLayer);
+  tileLayer = L.tileLayer(dark ? DARK_TILE : LIGHT_TILE, { maxZoom: 19, attribution: "© OpenStreetMap © CARTO" }).addTo(map);
+  allRows.forEach((_, i) => { const mk = markers.find(m => m.row === allRows[i]); if (mk) mk.setIcon(markerIcon(allRows[i])); });
+  if (userMarker) userMarker.setIcon(mkLocIcon());
+}
 
-let allRows = [];
-let visibleRows = [];
-let markers = [];
-let currentFilter = "الكل";
-let labelMode = "permit";
-let userMarker = null;
-let selectedRow = null;
-let editPassword = "";
-let userLat = null;
-let userLng = null;
+document.getElementById("themeBtn").addEventListener("click", () => setTheme(!isDark));
+document.getElementById("themeBtnMob").addEventListener("click", () => setTheme(!isDark));
+
+/* ══ STATE ══ */
+let allRows = [], markers = [], currentFilter = "الكل", labelMode = "permit";
+let userMarker = null, userLat = null, userLng = null;
+let selectedRow = null, editPassword = "";
+let watchId = null;
 
 const group = L.featureGroup().addTo(map);
+const $ = id => document.getElementById(id);
+const esc = v => String(v ?? "").replace(/[&<>"']/g, s => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[s]));
+const num = v => { const n = Number(v); return Number.isFinite(n) ? n : null; };
 
-function themeForNationality(n) {
-  if (n === "باكستان") return { cls:"pk", dot:"#22c55e" };
-  if (n === "النيجر") return { cls:"ng", dot:"#60a5fa" };
-  return { cls:"eg", dot:"#f87171" };
+function nc(n) { return n === "باكستان" ? "pk" : n === "النيجر" ? "ng" : "eg"; }
+
+function themeColor(n) {
+  if (n === "باكستان") return { dot:"#4ade80", border:"rgba(74,222,128,.4)", text:"#4ade80" };
+  if (n === "النيجر")  return { dot:"#60a5fa", border:"rgba(96,165,250,.4)", text:"#60a5fa" };
+  return { dot:"#f87171", border:"rgba(248,113,113,.4)", text:"#f87171" };
 }
 
-function esc(v) {
-  return String(v ?? "").replace(/[&<>"']/g, s => ({
-    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
-  }[s]));
+function haversineKm(la1, ln1, la2, ln2) {
+  const R = 6371, rad = d => d * Math.PI / 180;
+  const dLa = rad(la2-la1), dLn = rad(ln2-ln1);
+  const a = Math.sin(dLa/2)**2 + Math.cos(rad(la1))*Math.cos(rad(la2))*Math.sin(dLn/2)**2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
 }
 
-function num(v) {
-  const n = Number(v);
-  return Number.isFinite(n) ? n : null;
+function fmtDist(la1, ln1, la2, ln2) {
+  const km = haversineKm(la1, ln1, la2, ln2);
+  return km < 1 ? `${Math.round(km*1000)} م` : `${km.toFixed(1)} كم`;
 }
 
-function haversineKm(lat1, lng1, lat2, lng2) {
-  const toRad = d => d * Math.PI / 180;
-  const R = 6371;
-  const dLat = toRad(lat2 - lat1);
-  const dLng = toRad(lng2 - lng1);
-  const a =
-    Math.sin(dLat / 2) ** 2 +
-    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) *
-    Math.sin(dLng / 2) ** 2;
-  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-}
-
-function extractCoordsFromLink(link) {
+function extractCoords(link) {
   if (!link) return { lat: null, lng: null };
-
-  let match = link.match(/!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/);
-  if (match) return { lat: parseFloat(match[1]), lng: parseFloat(match[2]) };
-
-  match = link.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/);
-  if (match) return { lat: parseFloat(match[1]), lng: parseFloat(match[2]) };
-
-  match = link.match(/[?&]q=(-?\d+\.\d+),(-?\d+\.\d+)/);
-  if (match) return { lat: parseFloat(match[1]), lng: parseFloat(match[2]) };
-
-  match = link.match(/(-?\d+\.\d+),\s*(-?\d+\.\d+)/);
-  if (match) return { lat: parseFloat(match[1]), lng: parseFloat(match[2]) };
-
+  const pats = [/!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/, /@(-?\d+\.\d+),(-?\d+\.\d+)/, /[?&]q=(-?\d+\.\d+),(-?\d+\.\d+)/, /(-?\d+\.\d+),\s*(-?\d+\.\d+)/];
+  for (const p of pats) { const m = String(link).match(p); if (m) return { lat: parseFloat(m[1]), lng: parseFloat(m[2]) }; }
   return { lat: null, lng: null };
 }
 
-function buildLocation(row) {
-  let lat = num(row.lat);
-  let lng = num(row.lng);
-
-  if (!lat || !lng) {
-    const coords = extractCoordsFromLink(String(row.link || "").trim());
-    lat = coords.lat;
-    lng = coords.lng;
-  }
-
+function buildRow(row) {
+  let lat = num(row.lat), lng = num(row.lng);
+  if (!lat || !lng) { const c = extractCoords(String(row.link || "").trim()); lat = c.lat; lng = c.lng; }
   return {
     _rowNumber: row._rowNumber,
     name: String(row.name || "").trim(),
@@ -250,363 +459,278 @@ function buildLocation(row) {
     rooms_count: String(row.rooms_count || "").trim(),
     classification: String(row.classification || "").trim(),
     status: String(row.status || "").trim(),
-    ministry_status: String(row.ministry_status || "").trim(),
-    source_sheet: String(row.source_sheet || "").trim(),
-    gprs: String(row.gprs || "").trim(),
-    lat,
-    lng,
-    has_coords: !!lat && !!lng,
+    lat, lng, has_coords: !!lat && !!lng,
     link: String(row.link || "").trim()
   };
 }
 
-async function loadData() {
-  const res = await fetch(API + "?action=list");
-  const json = await res.json();
-  allRows = json.map(buildLocation);
-  render();
-}
-
-function currentLabel(row) {
-  return labelMode === "permit" ? (row.permit || row.name) : row.name;
-}
+function currentLabel(row) { return labelMode === "permit" ? (row.permit || row.name) : row.name; }
 
 function markerIcon(row) {
-  const t = themeForNationality(row.nationality);
+  const t = themeColor(row.nationality);
+  const bg = isDark ? "#161d28" : "#ffffff";
   return L.divIcon({
     className: "label-marker",
-    html: `
-      <div class="label-wrap">
-        <span class="label-dot" style="background:${t.dot}"></span>
-        <span class="label-text">${esc(currentLabel(row))}</span>
-      </div>
-    `,
-    iconSize: [140, 24],
-    iconAnchor: [18, 12],
-    popupAnchor: [0, -10]
+    html: `<div class="label-wrap"><span class="label-dot" style="background:${t.dot};box-shadow:0 0 8px ${t.dot}88"></span><span class="label-text" style="border-color:${t.border};color:${t.text};background:${bg}">${esc(currentLabel(row))}</span></div>`,
+    iconSize: [140, 24], iconAnchor: [18, 12], popupAnchor: [0, -10]
   });
 }
 
-function popupHtml(row) {
-  let distanceText = "";
-  if (userLat && userLng && row.has_coords) {
-    const km = haversineKm(userLat, userLng, row.lat, row.lng);
-    distanceText = `يبعد عنك: ${km.toFixed(1)} كم<br>`;
-  }
-
-  return `
-    <div class="popup-title">${esc(row.name)}</div>
-    <div class="popup-meta">
-      الجنسية: ${esc(row.nationality)}<br>
-      رقم التصريح: ${esc(row.permit)}<br>
-      ${row.phone ? `رقم التواصل: ${esc(row.phone)}<br>` : ``}
-      ${row.area ? `الحي: ${esc(row.area)}<br>` : ``}
-      ${distanceText}
-      ${row.extra ? `${esc(row.extra)}<br>` : ``}
-      ${!row.has_coords ? `<b style="color:#b45309">لا توجد إحداثيات محفوظة بعد</b><br>` : ``}
-    </div>
-    <div class="actions">
-      ${row.link ? `<a class="btn" target="_blank" href="${row.link}">فتح الموقع</a>` : ``}
-      ${row.has_coords ? `<a class="btn primary" target="_blank" href="https://www.google.com/maps/dir/?api=1&destination=${row.lat},${row.lng}">الملاحة</a>` : ``}
-      <button class="btn" onclick="startEditByRow(${row._rowNumber})">تحديث الموقع</button>
-    </div>
-  `;
+function rowInfo(row) {
+  return [row.name, `الجنسية: ${row.nationality}`, row.permit && `رقم التصريح: ${row.permit}`, row.phone && `رقم التواصل: ${row.phone}`, row.area && `الحي: ${row.area}`, row.extra || "", row.owner_building_name && `اسم العمارة: ${row.owner_building_name}`, row.tenant_name && `المستأجر: ${row.tenant_name}`, row.unified_contract_no && `العقد الموحد: ${row.unified_contract_no}`, row.request_no && `رقم الطلب: ${row.request_no}`, row.pilgrims_total && `عدد الحجاج: ${row.pilgrims_total}`].filter(Boolean).join("\n");
 }
 
-function copyText(text, btn) {
-  navigator.clipboard.writeText(text).then(() => {
-    if (!btn) return;
-    const old = btn.textContent;
-    btn.textContent = "تم";
-    setTimeout(() => btn.textContent = old, 900);
-  });
+async function cpTxt(text, btn) {
+  try { await navigator.clipboard.writeText(text); } catch { const t = document.createElement("textarea"); t.value = text; document.body.appendChild(t); t.select(); document.execCommand("copy"); t.remove(); }
+  if (btn) { const o = btn.textContent; btn.textContent = "✓ تم"; btn.style.color = "var(--pk)"; setTimeout(() => { btn.textContent = o; btn.style.color = ""; }, 1000); }
 }
 
-function rowInfoText(row) {
-  return [
-    row.name,
-    `الجنسية: ${row.nationality}`,
-    row.permit ? `رقم التصريح: ${row.permit}` : "",
-    row.phone ? `رقم التواصل: ${row.phone}` : "",
-    row.area ? `الحي: ${row.area}` : "",
-    row.extra ? row.extra : "",
-    row.owner_building_name ? `اسم العمارة: ${row.owner_building_name}` : "",
-    row.tenant_name ? `المستأجر: ${row.tenant_name}` : "",
-    row.unified_contract_no ? `العقد الموحد: ${row.unified_contract_no}` : "",
-    row.request_no ? `رقم الطلب: ${row.request_no}` : "",
-    row.pilgrims_total ? `عدد الحجاج: ${row.pilgrims_total}` : ""
-  ].filter(Boolean).join("\n");
+function puHtml(row) {
+  const dist = (userLat && userLng && row.has_coords) ? `يبعد: <b>${fmtDist(userLat,userLng,row.lat,row.lng)}</b>` : "";
+  return `<div class="pu-inner">
+    <div class="pu-title">${esc(row.name)}</div>
+    <div class="pu-grid">
+      <span>الجنسية: <b>${esc(row.nationality)}</b></span>
+      ${row.permit ? `<span>التصريح: <b>${esc(row.permit)}</b></span>` : ""}
+      ${row.phone ? `<span>التواصل: <b>${esc(row.phone)}</b></span>` : ""}
+      ${row.area ? `<span>الحي: <b>${esc(row.area)}</b></span>` : ""}
+      ${row.pilgrims_total ? `<span>الحجاج: <b>${esc(row.pilgrims_total)}</b></span>` : ""}
+      ${row.rooms_count ? `<span>الغرف: <b>${esc(row.rooms_count)}</b></span>` : ""}
+      ${dist ? `<span class="full">📏 ${dist}</span>` : ""}
+      ${!row.has_coords ? `<span class="full" style="color:#f59e0b">⚠️ لا توجد إحداثيات بعد</span>` : ""}
+    </div>
+    <div class="pu-actions">
+      ${row.link ? `<a class="btn primary" href="${row.link}" target="_blank">📍 فتح الموقع</a>` : ""}
+      ${row.has_coords ? `<a class="btn" href="https://www.google.com/maps/dir/?api=1&destination=${row.lat},${row.lng}" target="_blank">🧭 ملاحة</a>` : ""}
+      <button class="btn danger" onclick="startEditByRow(${row._rowNumber})">✏ تحديث</button>
+    </div>
+  </div>`;
+}
+
+function cardHtml(row) {
+  const dist = (userLat && userLng && row.has_coords) ? fmtDist(userLat,userLng,row.lat,row.lng) : "—";
+  const ncls = nc(row.nationality);
+  return `<div class="card-hd">
+    <div class="card-title">${esc(row.name)}</div>
+    <div class="cbadges">
+      ${row.area ? `<span class="badge site">${esc(row.area)}</span>` : ""}
+      <span class="badge ${ncls}">${esc(row.nationality)}</span>
+    </div>
+  </div>
+  <div class="card-meta">
+    ${row.permit ? `<span>التصريح: <b>${esc(row.permit)}</b></span>` : "<span></span>"}
+    ${row.phone ? `<span>التواصل: <b>${esc(row.phone)}</b></span>` : "<span></span>"}
+    ${row.pilgrims_total ? `<span>الحجاج: <b>${esc(row.pilgrims_total)}</b></span>` : "<span></span>"}
+    ${row.rooms_count ? `<span>الغرف: <b>${esc(row.rooms_count)}</b></span>` : "<span></span>"}
+    <span>📏 يبعد: <b>${dist}</b></span>
+    ${!row.has_coords ? `<span class="no-coords">⚠️ لا توجد إحداثيات بعد</span>` : "<span></span>"}
+  </div>
+  <div class="cactions">
+    <button class="btn" data-copy="info">نسخ المعلومات</button>
+    ${row.link ? `<button class="btn" data-copy="loc">نسخ الموقع</button>` : ""}
+    ${row.link ? `<a class="btn" target="_blank" href="${row.link}">فتح</a>` : ""}
+    ${row.has_coords ? `<a class="btn primary" target="_blank" href="https://www.google.com/maps/dir/?api=1&destination=${row.lat},${row.lng}">🧭 ملاحة</a>` : ""}
+    <button class="btn danger" data-edit="1">✏ تحديث</button>
+  </div>`;
+}
+
+function bindAct(div, row) {
+  div.querySelector("[data-copy='info']")?.addEventListener("click", e => { e.stopPropagation(); cpTxt(rowInfo(row), e.currentTarget); });
+  div.querySelector("[data-copy='loc']")?.addEventListener("click", e => { e.stopPropagation(); cpTxt(row.link, e.currentTarget); });
+  div.querySelector("[data-edit='1']")?.addEventListener("click", e => { e.stopPropagation(); startEdit(row); });
 }
 
 function filterRows() {
-  const q = (searchEl.value || searchMobileEl.value || "").trim().toLowerCase();
+  const q = ($("search").value || $("searchM").value || "").trim().toLowerCase();
   return allRows.filter(r => {
-    const filterOk = currentFilter === "الكل" || r.nationality === currentFilter;
-    const text = [
-      r.name, r.permit, r.phone, r.extra, r.area, r.owner_building_name,
-      r.tenant_name, r.unified_contract_no, r.request_no
-    ].join(" ").toLowerCase();
-    return filterOk && (!q || text.includes(q));
+    const ok = currentFilter === "الكل" || r.nationality === currentFilter;
+    const tx = [r.name, r.permit, r.phone, r.extra, r.area, r.owner_building_name, r.tenant_name, r.unified_contract_no, r.request_no].join(" ").toLowerCase();
+    return ok && (!q || tx.includes(q));
   });
 }
 
-function clearMarkers() {
-  markers.forEach(m => group.removeLayer(m));
-  markers = [];
-}
+function clearMk() { markers.forEach(m => group.removeLayer(m)); markers = []; }
 
 function renderMarkers(rows) {
-  clearMarkers();
-  const coordsRows = rows.filter(r => r.has_coords && r.lat && r.lng);
-  coordsRows.forEach(row => {
+  clearMk();
+  const withCoords = rows.filter(r => r.has_coords);
+  withCoords.forEach(row => {
     const m = L.marker([row.lat, row.lng], { icon: markerIcon(row) }).addTo(group);
-    m.bindPopup(popupHtml(row));
+    m.bindPopup(puHtml(row), { maxWidth: 300 });
     m.row = row;
     markers.push(m);
   });
-  mapCountEl.textContent = coordsRows.length;
-  mapCountMobileEl.textContent = coordsRows.length;
-}
-
-function makeItem(row) {
-  const t = themeForNationality(row.nationality);
-  const div = document.createElement("div");
-  div.className = `item ${t.cls}`;
-
-  let distanceText = "";
-  if (userLat && userLng && row.has_coords) {
-    const km = haversineKm(userLat, userLng, row.lat, row.lng);
-    distanceText = `يبعد عنك: ${km.toFixed(1)} كم<br>`;
-  }
-
-  div.innerHTML = `
-    <div class="title">
-      <span>${esc(row.name)}</span>
-      <span class="pill">${esc(row.nationality)}</span>
-    </div>
-    <div class="meta">
-      ${row.permit ? `رقم التصريح: ${esc(row.permit)}<br>` : ``}
-      ${row.phone ? `رقم التواصل: ${esc(row.phone)}<br>` : ``}
-      ${row.area ? `الحي: ${esc(row.area)}<br>` : ``}
-      ${distanceText}
-      ${row.extra ? `${esc(row.extra)}<br>` : ``}
-      ${!row.has_coords ? `<b style="color:#b45309">لا توجد إحداثيات بعد</b><br>` : ``}
-    </div>
-    <div class="actions">
-      <button class="btn copy-info">نسخ المعلومات</button>
-      ${row.link ? `<button class="btn copy-link">نسخ الموقع</button>` : ``}
-      ${row.link ? `<a class="btn" target="_blank" href="${row.link}">فتح</a>` : ``}
-      ${row.has_coords ? `<a class="btn primary" target="_blank" href="https://www.google.com/maps/dir/?api=1&destination=${row.lat},${row.lng}">الملاحة</a>` : ``}
-      <button class="btn edit-location">تحديث الموقع</button>
-    </div>
-  `;
-  div.onclick = (e) => {
-    if (e.target.closest("button,a")) return;
-    if (row.has_coords) {
-      map.setView([row.lat, row.lng], 17);
-      const marker = markers.find(m => m.row === row);
-      if (marker) marker.openPopup();
-    } else if (row.link) {
-      window.open(row.link, "_blank");
-    }
-  };
-  div.querySelector(".copy-info")?.addEventListener("click", e => {
-    e.stopPropagation();
-    copyText(rowInfoText(row), e.target);
-  });
-  div.querySelector(".copy-link")?.addEventListener("click", e => {
-    e.stopPropagation();
-    copyText(row.link, e.target);
-  });
-  div.querySelector(".edit-location")?.addEventListener("click", e => {
-    e.stopPropagation();
-    startEdit(row);
-  });
-  return div;
-}
-
-function makeMobileItem(row) {
-  const t = themeForNationality(row.nationality);
-  const div = document.createElement("div");
-  div.className = `item ${t.cls}`;
-  div.innerHTML = `
-    <div class="title">
-      <span>${esc(row.name)}</span>
-      <span class="pill">${esc(row.nationality)}</span>
-    </div>
-    <div class="mobile-mini-actions">
-      <button class="btn copy-info">نسخ</button>
-      ${row.link ? `<button class="btn copy-link">موقع</button>` : ``}
-      <button class="btn edit-location">تحديث</button>
-    </div>
-  `;
-  div.onclick = (e) => {
-    if (e.target.closest("button,a")) return;
-    if (row.has_coords) {
-      map.setView([row.lat, row.lng], 17);
-      const marker = markers.find(m => m.row === row);
-      if (marker) marker.openPopup();
-    } else if (row.link) {
-      window.open(row.link, "_blank");
-    }
-  };
-  div.querySelector(".copy-info")?.addEventListener("click", e => {
-    e.stopPropagation();
-    copyText(rowInfoText(row), e.target);
-  });
-  div.querySelector(".copy-link")?.addEventListener("click", e => {
-    e.stopPropagation();
-    copyText(row.link, e.target);
-  });
-  div.querySelector(".edit-location")?.addEventListener("click", e => {
-    e.stopPropagation();
-    startEdit(row);
-  });
-  return div;
+  $("mapCnt").textContent = withCoords.length;
+  $("mapCntM").textContent = withCoords.length;
 }
 
 function render() {
-  visibleRows = filterRows();
-  renderMarkers(visibleRows);
+  const rows = filterRows();
+  renderMarkers(rows);
 
-  listEl.innerHTML = "";
-  mobileListEl.innerHTML = "";
-  visibleRows.forEach(r => {
-    listEl.appendChild(makeItem(r));
-    mobileListEl.appendChild(makeMobileItem(r));
+  // sidebar
+  const list = $("list"); list.innerHTML = "";
+  if (!rows.length) {
+    list.innerHTML = `<div class="empty"><div class="empty-ico">🔍</div><div>لا توجد نتائج</div></div>`;
+  } else {
+    rows.forEach((row, i) => {
+      const div = document.createElement("div");
+      div.className = `card ${nc(row.nationality)}`;
+      div.style.animationDelay = `${Math.min(i*18,280)}ms`;
+      div.innerHTML = cardHtml(row);
+      bindAct(div, row);
+      div.addEventListener("click", e => {
+        if (e.target.closest("a,button")) return;
+        if (row.has_coords) { map.setView([row.lat,row.lng],17); const mk=markers.find(m=>m.row===row); if(mk)mk.openPopup(); $("map").scrollIntoView({behavior:"smooth",block:"start"}); }
+        else if (row.link) window.open(row.link,"_blank");
+      });
+      list.appendChild(div);
+    });
+  }
+
+  // mobile grid
+  const mg = $("mobGrid"); mg.innerHTML = "";
+  rows.forEach(row => {
+    const d = (userLat && userLng && row.has_coords) ? fmtDist(userLat,userLng,row.lat,row.lng) : "";
+    const div = document.createElement("div");
+    div.className = `mini-card ${nc(row.nationality)}`;
+    div.innerHTML = `
+      <div class="mini-id">${esc(row.permit || row.name)}</div>
+      <div class="mini-nat">${esc(row.nationality)}${row.area ? ` • ${esc(row.area)}` : ""}</div>
+      ${d ? `<div style="font-size:10px;color:var(--text2);margin-bottom:6px;font-weight:700">📏 ${esc(d)}</div>` : ""}
+      <div class="mini-actions">
+        <button class="mini-btn" data-copy="info">نسخ</button>
+        ${row.link ? `<button class="mini-btn" data-copy="loc">موقع</button>` : ""}
+        <button class="mini-btn" data-edit="1">تحديث</button>
+      </div>`;
+    div.querySelector("[data-copy='info']")?.addEventListener("click", e => { e.stopPropagation(); cpTxt(rowInfo(row), e.currentTarget); });
+    div.querySelector("[data-copy='loc']")?.addEventListener("click", e => { e.stopPropagation(); cpTxt(row.link, e.currentTarget); });
+    div.querySelector("[data-edit='1']")?.addEventListener("click", e => { e.stopPropagation(); startEdit(row); });
+    div.addEventListener("click", e => {
+      if (e.target.closest("button")) return;
+      if (row.has_coords) { map.setView([row.lat,row.lng],17); const mk=markers.find(m=>m.row===row); if(mk)mk.openPopup(); $("map").scrollIntoView({behavior:"smooth",block:"start"}); }
+      else if (row.link) window.open(row.link,"_blank");
+    });
+    mg.appendChild(div);
   });
 
-  visibleCountEl.textContent = visibleRows.length;
-  visibleCountMobileEl.textContent = visibleRows.length;
+  $("cnt").textContent = rows.length;
+  $("cntM").textContent = rows.length;
 }
 
-function fitVisible() {
-  const points = visibleRows.filter(r => r.has_coords && r.lat && r.lng);
-  if (!points.length) return;
-  const bounds = L.latLngBounds(points.map(r => [r.lat, r.lng]));
-  map.fitBounds(bounds.pad(0.15));
-}
-
-function setFilter(value) {
-  currentFilter = value;
-  document.querySelectorAll("[data-filter]").forEach(x => {
-    x.classList.toggle("active", x.dataset.filter === value);
+function setFilter(val) {
+  currentFilter = val;
+  document.querySelectorAll("[data-filter],[data-filter-map],[data-filter-mob]").forEach(b => {
+    const v = b.dataset.filter || b.dataset.filterMap || b.dataset.filterMob;
+    b.classList.toggle("active", v === val);
   });
   render();
 }
 
-document.querySelectorAll("[data-filter]").forEach(btn => {
-  btn.addEventListener("click", () => setFilter(btn.dataset.filter));
-});
+function setLabel(mode) {
+  labelMode = mode;
+  const isName = mode === "name";
+  ["showName","mShowName","mShowNameMob"].forEach(id => $(id)?.classList.toggle("active", isName));
+  ["showPermit","mShowPermit","mShowPermitMob"].forEach(id => $(id)?.classList.toggle("active", !isName));
+  markers.forEach(m => m.setIcon(markerIcon(m.row)));
+}
 
-showNameBtn.onclick = mobileShowNameBtn.onclick = () => {
-  labelMode = "name";
-  showNameBtn.classList.add("active");
-  mobileShowNameBtn.classList.add("active");
-  showPermitBtn.classList.remove("active");
-  mobileShowPermitBtn.classList.remove("active");
-  renderMarkers(visibleRows);
-};
+/* ══ LOCATION ══ */
+function setBanner(state, msg) {
+  const b = $("locBanner"), tx = $("locTxt"), btn = $("locBtn");
+  if (!b) return;
+  b.className = "loc-banner" + (state==="ok"?" ok":state==="denied"?" denied":"");
+  if (tx) tx.textContent = msg;
+  if (btn) btn.textContent = state==="ok" ? "تحديث" : "إعادة المحاولة";
+}
 
-showPermitBtn.onclick = mobileShowPermitBtn.onclick = () => {
-  labelMode = "permit";
-  showPermitBtn.classList.add("active");
-  mobileShowPermitBtn.classList.add("active");
-  showNameBtn.classList.remove("active");
-  mobileShowNameBtn.classList.remove("active");
-  renderMarkers(visibleRows);
-};
-
-fitBtn.onclick = fitVisible;
-
-searchEl.addEventListener("input", () => {
-  searchMobileEl.value = searchEl.value;
-  render();
-});
-searchMobileEl.addEventListener("input", () => {
-  searchEl.value = searchMobileEl.value;
-  render();
-});
-
-locateBtn.onclick = () => {
-  if (!navigator.geolocation) return;
-  navigator.geolocation.getCurrentPosition(pos => {
-    const lat = pos.coords.latitude;
-    const lng = pos.coords.longitude;
-    userLat = lat;
-    userLng = lng;
-    if (!userMarker) {
-      userMarker = L.circleMarker([lat, lng], {
-        radius: 8, color: "#fff", weight: 3, fillColor: "#2563eb", fillOpacity: 1
-      }).addTo(map).bindPopup("موقعك الحالي");
-    } else {
-      userMarker.setLatLng([lat, lng]);
-    }
-    map.setView([lat, lng], 15);
-    userMarker.openPopup();
-    render();
+function mkLocIcon() {
+  const bg = "#fff";
+  return L.divIcon({
+    className: "",
+    html: `<div style="position:relative;width:22px;height:22px">
+      <div style="position:absolute;top:50%;left:50%;width:13px;height:13px;background:#3b82f6;border:2.5px solid ${bg};border-radius:50%;z-index:2;box-shadow:0 0 12px rgba(59,130,246,.9);transform:translate(-50%,-50%)"></div>
+      <div style="position:absolute;top:50%;left:50%;width:13px;height:13px;background:rgba(59,130,246,.35);border-radius:50%;animation:locPulse 2s ease-out infinite;transform:translate(-50%,-50%)"></div>
+    </div>`,
+    iconSize: [22,22], iconAnchor: [11,11], popupAnchor: [0,-13]
   });
-};
+}
 
+function updateLoc(lat, lng, center=false) {
+  userLat = lat; userLng = lng;
+  if (!userMarker) userMarker = L.marker([lat,lng],{icon:mkLocIcon(),zIndexOffset:9999}).addTo(map).bindPopup("📍 موقعك الحالي");
+  else { userMarker.setLatLng([lat,lng]); userMarker.setIcon(mkLocIcon()); }
+  if (center) { map.setView([lat,lng],15); userMarker.openPopup(); }
+  setBanner("ok","✓ تم تحديد موقعك — المسافات تظهر الآن");
+  $("sdot").className = "sdot ok";
+  render();
+}
+
+function startLoc(forceCenter=false) {
+  if (!navigator.geolocation) { setBanner("denied","المتصفح لا يدعم تحديد الموقع."); return; }
+  if (watchId !== null) { navigator.geolocation.clearWatch(watchId); watchId = null; }
+  setBanner("","⏳ جارِ تحديد موقعك...");
+  let centered = !forceCenter;
+  const ok = pos => { const c=!centered; centered=true; updateLoc(pos.coords.latitude,pos.coords.longitude,c); };
+  const err = e => { const m={1:"🚫 رُفض الإذن — افتح الإعدادات وأعطِ صلاحية الموقع",2:"⚠️ تعذر تحديد موقعك — تأكد من GPS",3:"⏱ انتهت المهلة — اضغط إعادة المحاولة"}; setBanner("denied",m[e.code]||"خطأ."); };
+  navigator.geolocation.getCurrentPosition(ok, err, {enableHighAccuracy:true,timeout:15000,maximumAge:0});
+  watchId = navigator.geolocation.watchPosition(ok, ()=>{}, {enableHighAccuracy:true,maximumAge:5000,timeout:20000});
+}
+
+/* ══ EDIT ══ */
 function startEdit(row) {
   const pwd = prompt("أدخل كلمة السر");
   if (!pwd) return;
-  selectedRow = row;
-  editPassword = pwd;
-  alert("الآن اضغط المكان الصحيح في الخريطة لحفظ الإحداثيات");
+  selectedRow = row; editPassword = pwd;
+  alert("الآن اضغط المكان الصحيح في الخريطة");
 }
-
-function startEditByRow(rowNumber) {
-  const row = allRows.find(r => Number(r._rowNumber) === Number(rowNumber));
-  if (row) startEdit(row);
-}
+function startEditByRow(rn) { const row = allRows.find(r => Number(r._rowNumber) === Number(rn)); if (row) startEdit(row); }
 window.startEditByRow = startEditByRow;
 
-map.on("click", async (e) => {
+map.on("click", async e => {
   if (!selectedRow) return;
-
-  const lat = e.latlng.lat;
-  const lng = e.latlng.lng;
-
+  const lat = e.latlng.lat, lng = e.latlng.lng;
   try {
-    const res = await fetch(API, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        action: "updateLocation",
-        rowNumber: selectedRow._rowNumber,
-        lat,
-        lng,
-        password: editPassword
-      })
-    });
-
+    const res = await fetch(API, { method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({action:"updateLocation",rowNumber:selectedRow._rowNumber,lat,lng,password:editPassword}) });
     const result = await res.json();
-    if (!result.ok) {
-      alert("فشل التحديث: " + (result.error || "خطأ"));
-      selectedRow = null;
-      editPassword = "";
-      return;
-    }
-
-    selectedRow.lat = lat;
-    selectedRow.lng = lng;
-    selectedRow.has_coords = true;
-    selectedRow.link = `https://www.google.com/maps?q=${lat},${lng}`;
-
-    selectedRow = null;
-    editPassword = "";
-    render();
-    alert("تم تحديث الموقع بنجاح");
-  } catch (err) {
-    console.error(err);
-    alert("تعذر حفظ التحديث");
-    selectedRow = null;
-    editPassword = "";
-  }
+    if (!result.ok) { alert("فشل التحديث: "+(result.error||"خطأ")); selectedRow=null; editPassword=""; return; }
+    selectedRow.lat=lat; selectedRow.lng=lng; selectedRow.has_coords=true; selectedRow.link=`https://www.google.com/maps?q=${lat},${lng}`;
+    selectedRow=null; editPassword=""; render(); alert("✅ تم تحديث الموقع بنجاح");
+  } catch(err) { alert("تعذر حفظ التحديث"); selectedRow=null; editPassword=""; }
 });
 
-loadData().then(() => fitVisible()).catch(console.error);
+/* ══ LOAD ══ */
+async function loadData() {
+  $("sdot").className = "sdot"; $("stxt").textContent = "جارِ تحميل البيانات...";
+  try {
+    const res = await fetch(API + "?action=list");
+    const json = await res.json();
+    allRows = json.map(buildRow);
+    render();
+    const withCoords = allRows.filter(r => r.has_coords);
+    if (withCoords.length) map.fitBounds(L.latLngBounds(withCoords.map(r=>[r.lat,r.lng])).pad(.15));
+    $("sdot").className = "sdot ok";
+    $("stxt").textContent = `${allRows.length} سجل — ${withCoords.length} بإحداثيات`;
+  } catch(e) {
+    $("sdot").className = "sdot err"; $("stxt").textContent = "تعذر تحميل البيانات";
+    $("list").innerHTML = `<div class="empty"><div class="empty-ico">⚠️</div><div>تعذر تحميل البيانات</div></div>`;
+  }
+}
+
+/* ══ EVENTS ══ */
+document.querySelectorAll("[data-filter],[data-filter-map],[data-filter-mob]").forEach(b =>
+  b.addEventListener("click", () => { const v = b.dataset.filter||b.dataset.filterMap||b.dataset.filterMob; setFilter(v); })
+);
+$("showName").onclick = $("mShowName").onclick = $("mShowNameMob").onclick = () => setLabel("name");
+$("showPermit").onclick = $("mShowPermit").onclick = $("mShowPermitMob").onclick = () => setLabel("permit");
+$("fitBtn").onclick = () => { const r=filterRows(); const pts=r.filter(x=>x.has_coords); if(pts.length) map.fitBounds(L.latLngBounds(pts.map(x=>[x.lat,x.lng])).pad(.15)); };
+$("locateBtn").onclick = () => startLoc(true);
+$("locBtn").onclick = () => startLoc(true);
+$("search").addEventListener("input", () => { $("searchM").value=$("search").value; render(); });
+$("searchM").addEventListener("input", () => { $("search").value=$("searchM").value; render(); });
+
+window.addEventListener("load", () => { loadData(); startLoc(true); });
 </script>
+
 </body>
 </html>
