@@ -28,12 +28,20 @@
   --border:#ddd5c4;--border-hi:#c8bfad;
   --text:#1c1812;--text2:#4a4030;--muted:#8a7d6a;
   --accent:#b8860e;--accent2:#9a720a;--accent-dim:rgba(184,134,14,.12);--accent-glow:rgba(184,134,14,.28);
-  --eg:#dc2626;--eg-bg:rgba(220,38,38,.1);--eg-border:rgba(220,38,38,.35);--eg-glow:rgba(220,38,38,.28);
-  --ng:#2563eb;--ng-bg:rgba(37,99,235,.1);--ng-border:rgba(37,99,235,.35);--ng-glow:rgba(37,99,235,.28);
-  --pk:#16a34a;--pk-bg:rgba(22,163,74,.1);--pk-border:rgba(22,163,74,.35);--pk-glow:rgba(22,163,74,.28);
+  --eg:#dc2626;--eg-bg:rgba(220,38,38,.12);--eg-border:rgba(220,38,38,.4);--eg-glow:rgba(220,38,38,.28);
+  --ng:#2563eb;--ng-bg:rgba(37,99,235,.12);--ng-border:rgba(37,99,235,.4);--ng-glow:rgba(37,99,235,.28);
+  --pk:#16a34a;--pk-bg:rgba(22,163,74,.12);--pk-border:rgba(22,163,74,.4);--pk-glow:rgba(22,163,74,.28);
   --shadow:0 8px 32px rgba(0,0,0,.15);
 }
 [data-theme="light"] body{background-image:radial-gradient(ellipse at 90% 0%,rgba(184,134,14,.07),transparent 45%),radial-gradient(ellipse at 5% 95%,rgba(37,99,235,.04),transparent 45%)}
+
+/* Light mode — stronger card tints */
+[data-theme=“light”] .card.eg{background:linear-gradient(135deg,rgba(220,38,38,.14) 0%,#fff 50%);border-color:rgba(220,38,38,.45)}
+[data-theme=“light”] .card.ng{background:linear-gradient(135deg,rgba(37,99,235,.14) 0%,#fff 50%);border-color:rgba(37,99,235,.45)}
+[data-theme=“light”] .card.pk{background:linear-gradient(135deg,rgba(22,163,74,.14) 0%,#fff 50%);border-color:rgba(22,163,74,.45)}
+[data-theme=“light”] .mini-card.eg{background:linear-gradient(135deg,rgba(220,38,38,.12),#fff 55%);border-color:rgba(220,38,38,.4)}
+[data-theme=“light”] .mini-card.ng{background:linear-gradient(135deg,rgba(37,99,235,.12),#fff 55%);border-color:rgba(37,99,235,.4)}
+[data-theme=“light”] .mini-card.pk{background:linear-gradient(135deg,rgba(22,163,74,.12),#fff 55%);border-color:rgba(22,163,74,.4)}
 
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 body{font-family:var(–font);background:var(–bg);color:var(–text);min-height:100vh;overflow:hidden;transition:background .35s,color .35s;
@@ -375,147 +383,155 @@ body{overflow:auto}
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
 
+<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css"/>
+<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css"/>
+<script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
 <script>
 const API = "https://script.google.com/macros/s/AKfycbyr3jVbbcbBVbG2ZY3aU2vjr-Zp-OG9UtJzZjKOzJSvGARmKxx8WBPfZSQBjERfcDhw-Q/exec";
 
 /* ══ THEME ══ */
-const DARK_TILE  = "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png";
-const LIGHT_TILE = "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png";
+const DARK_TILE  = “https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png”;
+const LIGHT_TILE = “https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png”;
 let isDark = true;
 let tileLayer = null;
 
-const map = L.map("map", { zoomControl: true }).setView([21.41, 39.87], 12);
-tileLayer = L.tileLayer(DARK_TILE, { maxZoom: 19, attribution: "© OpenStreetMap © CARTO" }).addTo(map);
+const map = L.map(“map”, { zoomControl: true }).setView([21.41, 39.87], 12);
+tileLayer = L.tileLayer(DARK_TILE, { maxZoom: 19, attribution: “© OpenStreetMap © CARTO” }).addTo(map);
 
 function setTheme(dark) {
-  isDark = dark;
-  document.documentElement.setAttribute("data-theme", dark ? "dark" : "light");
-  const ico = dark ? "🌙" : "☀️";
-  document.getElementById("themeBtn").textContent = ico;
-  document.getElementById("themeBtnMob").textContent = ico;
-  map.removeLayer(tileLayer);
-  tileLayer = L.tileLayer(dark ? DARK_TILE : LIGHT_TILE, { maxZoom: 19, attribution: "© OpenStreetMap © CARTO" }).addTo(map);
-  allRows.forEach((_, i) => { const mk = markers.find(m => m.row === allRows[i]); if (mk) mk.setIcon(markerIcon(allRows[i])); });
-  if (userMarker) userMarker.setIcon(mkLocIcon());
+isDark = dark;
+document.documentElement.setAttribute(“data-theme”, dark ? “dark” : “light”);
+const ico = dark ? “🌙” : “☀️”;
+document.getElementById(“themeBtn”).textContent = ico;
+document.getElementById(“themeBtnMob”).textContent = ico;
+map.removeLayer(tileLayer);
+tileLayer = L.tileLayer(dark ? DARK_TILE : LIGHT_TILE, { maxZoom: 19, attribution: “© OpenStreetMap © CARTO” }).addTo(map);
+// Re-render markers with new colors
+if (allRows.length) render();
+if (userMarker) userMarker.setIcon(mkLocIcon());
 }
 
-document.getElementById("themeBtn").addEventListener("click", () => setTheme(!isDark));
-document.getElementById("themeBtnMob").addEventListener("click", () => setTheme(!isDark));
+document.getElementById(“themeBtn”).addEventListener(“click”, () => setTheme(!isDark));
+document.getElementById(“themeBtnMob”).addEventListener(“click”, () => setTheme(!isDark));
 
 /* ══ STATE ══ */
-let allRows = [], markers = [], currentFilter = "الكل", labelMode = "permit";
+let allRows = [], markers = [], currentFilter = “الكل”, labelMode = “permit”;
 let userMarker = null, userLat = null, userLng = null;
-let selectedRow = null, editPassword = "";
+let selectedRow = null, editPassword = “”;
 let watchId = null;
 
-const group = L.featureGroup().addTo(map);
+const group = L.markerClusterGroup({
+maxClusterRadius: 60,
+showCoverageOnHover: false,
+iconCreateFunction: cluster => {
+const n = cluster.getChildCount();
+const bg = isDark ? “rgba(22,29,40,0.95)” : “rgba(255,255,255,0.95)”;
+const border = isDark ? “#3a4558” : “#c8bfad”;
+const color = isDark ? “#e8b84a” : “#b8860e”;
+return L.divIcon({
+html: `<div style="background:${bg};border:2px solid ${border};border-radius:50%;width:38px;height:38px;display:flex;align-items:center;justify-content:center;font-family:'Cairo',sans-serif;font-weight:800;font-size:13px;color:${color};box-shadow:0 4px 14px rgba(0,0,0,.35)">${n}</div>`,
+className: “”, iconSize: [38, 38], iconAnchor: [19, 19]
+});
+}
+}).addTo(map);
 const $ = id => document.getElementById(id);
-const esc = v => String(v ?? "").replace(/[&<>"']/g, s => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[s]));
+const esc = v => String(v ?? “”).replace(/[&<>”’]/g, s => ({”&”:”&”,”<”:”<”,”>”:”>”,’”’:”"”,”’”:”'”}[s]));
 const num = v => { const n = Number(v); return Number.isFinite(n) ? n : null; };
 
-function nc(n) { return n === "باكستان" ? "pk" : n === "النيجر" ? "ng" : "eg"; }
+function nc(n) { return n === “باكستان” ? “pk” : n === “النيجر” ? “ng” : “eg”; }
 
 function themeColor(n) {
-  if (n === "باكستان") return { dot:"#4ade80", border:"rgba(74,222,128,.4)", text:"#4ade80" };
-  if (n === "النيجر")  return { dot:"#60a5fa", border:"rgba(96,165,250,.4)", text:"#60a5fa" };
-  return { dot:"#f87171", border:"rgba(248,113,113,.4)", text:"#f87171" };
+if (isDark) {
+if (n === “باكستان”) return { dot:”#4ade80”, border:“rgba(74,222,128,.45)”, text:”#4ade80” };
+if (n === “النيجر”)  return { dot:”#60a5fa”, border:“rgba(96,165,250,.45)”, text:”#60a5fa” };
+return { dot:”#f87171”, border:“rgba(248,113,113,.45)”, text:”#f87171” };
+} else {
+if (n === “باكستان”) return { dot:”#16a34a”, border:“rgba(22,163,74,.55)”, text:”#166534” };
+if (n === “النيجر”)  return { dot:”#2563eb”, border:“rgba(37,99,235,.55)”, text:”#1e3a8a” };
+return { dot:”#dc2626”, border:“rgba(220,38,38,.55)”, text:”#991b1b” };
+}
 }
 
 function haversineKm(la1, ln1, la2, ln2) {
-  const R = 6371, rad = d => d * Math.PI / 180;
-  const dLa = rad(la2-la1), dLn = rad(ln2-ln1);
-  const a = Math.sin(dLa/2)**2 + Math.cos(rad(la1))*Math.cos(rad(la2))*Math.sin(dLn/2)**2;
-  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+const R = 6371, rad = d => d * Math.PI / 180;
+const dLa = rad(la2-la1), dLn = rad(ln2-ln1);
+const a = Math.sin(dLa/2)**2 + Math.cos(rad(la1))*Math.cos(rad(la2))*Math.sin(dLn/2)**2;
+return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
 }
 
 function fmtDist(la1, ln1, la2, ln2) {
-  const km = haversineKm(la1, ln1, la2, ln2);
-  return km < 1 ? `${Math.round(km*1000)} م` : `${km.toFixed(1)} كم`;
+const km = haversineKm(la1, ln1, la2, ln2);
+return km < 1 ? `${Math.round(km*1000)} م` : `${km.toFixed(1)} كم`;
 }
 
 function extractCoords(link) {
-  if (!link) return { lat: null, lng: null };
-  const pats = [/!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/, /@(-?\d+\.\d+),(-?\d+\.\d+)/, /[?&]q=(-?\d+\.\d+),(-?\d+\.\d+)/, /(-?\d+\.\d+),\s*(-?\d+\.\d+)/];
-  for (const p of pats) { const m = String(link).match(p); if (m) return { lat: parseFloat(m[1]), lng: parseFloat(m[2]) }; }
-  return { lat: null, lng: null };
+if (!link) return { lat: null, lng: null };
+const pats = [/!3d(-?\d+.\d+)!4d(-?\d+.\d+)/, /@(-?\d+.\d+),(-?\d+.\d+)/, /[?&]q=(-?\d+.\d+),(-?\d+.\d+)/, /(-?\d+.\d+),\s*(-?\d+.\d+)/];
+for (const p of pats) { const m = String(link).match(p); if (m) return { lat: parseFloat(m[1]), lng: parseFloat(m[2]) }; }
+return { lat: null, lng: null };
 }
 
 function buildRow(row) {
-  let lat = num(row.lat), lng = num(row.lng);
-  if (!lat || !lng) { const c = extractCoords(String(row.link || "").trim()); lat = c.lat; lng = c.lng; }
-  return {
-    _rowNumber: row._rowNumber,
-    name: String(row.name || "").trim(),
-    permit: String(row.permit || "").trim(),
-    phone: String(row.phone || "").trim(),
-    extra: String(row.extra || "").trim(),
-    nationality: String(row.nationality || "").trim(),
-    area: String(row.area || "").trim(),
-    owner_building_name: String(row.owner_building_name || "").trim(),
-    tenant_name: String(row.tenant_name || "").trim(),
-    unified_contract_no: String(row.unified_contract_no || "").trim(),
-    request_no: String(row.request_no || "").trim(),
-    pilgrims_total: String(row.pilgrims_total || "").trim(),
-    rooms_count: String(row.rooms_count || "").trim(),
-    classification: String(row.classification || "").trim(),
-    status: String(row.status || "").trim(),
-    lat, lng, has_coords: !!lat && !!lng,
-    link: String(row.link || "").trim()
-  };
+let lat = num(row.lat), lng = num(row.lng);
+if (!lat || !lng) { const c = extractCoords(String(row.link || “”).trim()); lat = c.lat; lng = c.lng; }
+return {
+_rowNumber: row._rowNumber,
+name: String(row.name || “”).trim(),
+permit: String(row.permit || “”).trim(),
+phone: String(row.phone || “”).trim(),
+extra: String(row.extra || “”).trim(),
+nationality: String(row.nationality || “”).trim(),
+area: String(row.area || “”).trim(),
+owner_building_name: String(row.owner_building_name || “”).trim(),
+tenant_name: String(row.tenant_name || “”).trim(),
+unified_contract_no: String(row.unified_contract_no || “”).trim(),
+request_no: String(row.request_no || “”).trim(),
+pilgrims_total: String(row.pilgrims_total || “”).trim(),
+rooms_count: String(row.rooms_count || “”).trim(),
+classification: String(row.classification || “”).trim(),
+status: String(row.status || “”).trim(),
+lat, lng, has_coords: !!lat && !!lng,
+link: String(row.link || “”).trim()
+};
 }
 
-function currentLabel(row) { return labelMode === "permit" ? (row.permit || row.name) : row.name; }
+function currentLabel(row) { return labelMode === “permit” ? (row.permit || row.name) : row.name; }
 
 function markerIcon(row) {
-  const t = themeColor(row.nationality);
-  const bg = isDark ? "#161d28" : "#ffffff";
-  return L.divIcon({
-    className: "label-marker",
-    html: `<div class="label-wrap"><span class="label-dot" style="background:${t.dot};box-shadow:0 0 8px ${t.dot}88"></span><span class="label-text" style="border-color:${t.border};color:${t.text};background:${bg}">${esc(currentLabel(row))}</span></div>`,
-    iconSize: [140, 24], iconAnchor: [18, 12], popupAnchor: [0, -10]
-  });
+const t = themeColor(row.nationality);
+const bg = isDark ? “#161d28” : “#ffffff”;
+return L.divIcon({
+className: “label-marker”,
+html: `<div class="label-wrap"><span class="label-dot" style="background:${t.dot};box-shadow:0 0 8px ${t.dot}88"></span><span class="label-text" style="border-color:${t.border};color:${t.text};background:${bg}">${esc(currentLabel(row))}</span></div>`,
+iconSize: [140, 24], iconAnchor: [18, 12], popupAnchor: [0, -10]
+});
 }
 
 function rowInfo(row) {
-  return [row.name, `الجنسية: ${row.nationality}`, row.permit && `رقم التصريح: ${row.permit}`, row.phone && `رقم التواصل: ${row.phone}`, row.area && `الحي: ${row.area}`, row.extra || "", row.owner_building_name && `اسم العمارة: ${row.owner_building_name}`, row.tenant_name && `المستأجر: ${row.tenant_name}`, row.unified_contract_no && `العقد الموحد: ${row.unified_contract_no}`, row.request_no && `رقم الطلب: ${row.request_no}`, row.pilgrims_total && `عدد الحجاج: ${row.pilgrims_total}`].filter(Boolean).join("\n");
+return [row.name, `الجنسية: ${row.nationality}`, row.permit && `رقم التصريح: ${row.permit}`, row.phone && `رقم التواصل: ${row.phone}`, row.area && `الحي: ${row.area}`, row.extra || “”, row.owner_building_name && `اسم العمارة: ${row.owner_building_name}`, row.tenant_name && `المستأجر: ${row.tenant_name}`, row.unified_contract_no && `العقد الموحد: ${row.unified_contract_no}`, row.request_no && `رقم الطلب: ${row.request_no}`, row.pilgrims_total && `عدد الحجاج: ${row.pilgrims_total}`].filter(Boolean).join(”\n”);
 }
 
 async function cpTxt(text, btn) {
-  try { await navigator.clipboard.writeText(text); } catch { const t = document.createElement("textarea"); t.value = text; document.body.appendChild(t); t.select(); document.execCommand("copy"); t.remove(); }
-  if (btn) { const o = btn.textContent; btn.textContent = "✓ تم"; btn.style.color = "var(--pk)"; setTimeout(() => { btn.textContent = o; btn.style.color = ""; }, 1000); }
+try { await navigator.clipboard.writeText(text); } catch { const t = document.createElement(“textarea”); t.value = text; document.body.appendChild(t); t.select(); document.execCommand(“copy”); t.remove(); }
+if (btn) { const o = btn.textContent; btn.textContent = “✓ تم”; btn.style.color = “var(–pk)”; setTimeout(() => { btn.textContent = o; btn.style.color = “”; }, 1000); }
 }
 
 function puHtml(row) {
-  const dist = (userLat && userLng && row.has_coords) ? `يبعد: <b>${fmtDist(userLat,userLng,row.lat,row.lng)}</b>` : "";
-  return `<div class="pu-inner">
-    <div class="pu-title">${esc(row.name)}</div>
-    <div class="pu-grid">
-      <span>الجنسية: <b>${esc(row.nationality)}</b></span>
-      ${row.permit ? `<span>التصريح: <b>${esc(row.permit)}</b></span>` : ""}
-      ${row.phone ? `<span>التواصل: <b>${esc(row.phone)}</b></span>` : ""}
-      ${row.area ? `<span>الحي: <b>${esc(row.area)}</b></span>` : ""}
-      ${row.pilgrims_total ? `<span>الحجاج: <b>${esc(row.pilgrims_total)}</b></span>` : ""}
-      ${row.rooms_count ? `<span>الغرف: <b>${esc(row.rooms_count)}</b></span>` : ""}
-      ${dist ? `<span class="full">📏 ${dist}</span>` : ""}
-      ${!row.has_coords ? `<span class="full" style="color:#f59e0b">⚠️ لا توجد إحداثيات بعد</span>` : ""}
-    </div>
-    <div class="pu-actions">
-      ${row.link ? `<a class="btn primary" href="${row.link}" target="_blank">📍 فتح الموقع</a>` : ""}
-      ${row.has_coords ? `<a class="btn" href="https://www.google.com/maps/dir/?api=1&destination=${row.lat},${row.lng}" target="_blank">🧭 ملاحة</a>` : ""}
-      <button class="btn danger" onclick="startEditByRow(${row._rowNumber})">✏ تحديث</button>
-    </div>
+const dist = (userLat && userLng && row.has_coords) ? `يبعد: <b>${fmtDist(userLat,userLng,row.lat,row.lng)}</b>` : “”;
+return `<div class="pu-inner"> <div class="pu-title">${esc(row.name)}</div> <div class="pu-grid"> <span>الجنسية: <b>${esc(row.nationality)}</b></span> ${row.permit ? `<span>التصريح: <b>${esc(row.permit)}</b></span>`: ""} ${row.phone ?`<span>التواصل: <b>${esc(row.phone)}</b></span>`: ""} ${row.area ?`<span>الحي: <b>${esc(row.area)}</b></span>`: ""} ${row.pilgrims_total ?`<span>الحجاج: <b>${esc(row.pilgrims_total)}</b></span>`: ""} ${row.rooms_count ?`<span>الغرف: <b>${esc(row.rooms_count)}</b></span>`: ""} ${dist ?`<span class="full">📏 ${dist}</span>`: ""} ${!row.has_coords ?`<span class="full" style="color:#f59e0b">⚠️ لا توجد إحداثيات بعد</span>`: ""} </div> <div class="pu-actions"> ${row.link ?`<a class="btn primary" href="${row.link}" target="_blank">📍 فتح الموقع</a>`: ""} ${row.has_coords ?`<a class="btn" href="https://www.google.com/maps/dir/?api=1&destination=${row.lat},${row.lng}" target="_blank">🧭 ملاحة</a>` : “”}
+<button class="btn danger" onclick="startEditByRow(${row._rowNumber})">✏ تحديث</button>
+</div>
+
   </div>`;
 }
 
 function cardHtml(row) {
-  const dist = (userLat && userLng && row.has_coords) ? fmtDist(userLat,userLng,row.lat,row.lng) : "—";
-  const ncls = nc(row.nationality);
-  return `<div class="card-hd">
-    <div class="card-title">${esc(row.name)}</div>
-    <div class="cbadges">
-      ${row.area ? `<span class="badge site">${esc(row.area)}</span>` : ""}
-      <span class="badge ${ncls}">${esc(row.nationality)}</span>
-    </div>
+const dist = (userLat && userLng && row.has_coords) ? fmtDist(userLat,userLng,row.lat,row.lng) : “—”;
+const ncls = nc(row.nationality);
+return `<div class="card-hd"> <div class="card-title">${esc(row.name)}</div> <div class="cbadges"> ${row.area ? `<span class="badge site">${esc(row.area)}</span>` : “”}
+<span class="badge ${ncls}">${esc(row.nationality)}</span>
+</div>
+
   </div>
   <div class="card-meta">
     ${row.permit ? `<span>التصريح: <b>${esc(row.permit)}</b></span>` : "<span></span>"}
@@ -535,201 +551,190 @@ function cardHtml(row) {
 }
 
 function bindAct(div, row) {
-  div.querySelector("[data-copy='info']")?.addEventListener("click", e => { e.stopPropagation(); cpTxt(rowInfo(row), e.currentTarget); });
-  div.querySelector("[data-copy='loc']")?.addEventListener("click", e => { e.stopPropagation(); cpTxt(row.link, e.currentTarget); });
-  div.querySelector("[data-edit='1']")?.addEventListener("click", e => { e.stopPropagation(); startEdit(row); });
+div.querySelector(”[data-copy=‘info’]”)?.addEventListener(“click”, e => { e.stopPropagation(); cpTxt(rowInfo(row), e.currentTarget); });
+div.querySelector(”[data-copy=‘loc’]”)?.addEventListener(“click”, e => { e.stopPropagation(); cpTxt(row.link, e.currentTarget); });
+div.querySelector(”[data-edit=‘1’]”)?.addEventListener(“click”, e => { e.stopPropagation(); startEdit(row); });
 }
 
 function filterRows() {
-  const q = ($("search").value || $("searchM").value || "").trim().toLowerCase();
-  return allRows.filter(r => {
-    const ok = currentFilter === "الكل" || r.nationality === currentFilter;
-    const tx = [r.name, r.permit, r.phone, r.extra, r.area, r.owner_building_name, r.tenant_name, r.unified_contract_no, r.request_no].join(" ").toLowerCase();
-    return ok && (!q || tx.includes(q));
-  });
+const q = ($(“search”).value || $(“searchM”).value || “”).trim().toLowerCase();
+return allRows.filter(r => {
+const ok = currentFilter === “الكل” || r.nationality === currentFilter;
+const tx = [r.name, r.permit, r.phone, r.extra, r.area, r.owner_building_name, r.tenant_name, r.unified_contract_no, r.request_no].join(” “).toLowerCase();
+return ok && (!q || tx.includes(q));
+});
 }
 
-function clearMk() { markers.forEach(m => group.removeLayer(m)); markers = []; }
+function clearMk() { group.clearLayers(); markers = []; }
 
 function renderMarkers(rows) {
-  clearMk();
-  const withCoords = rows.filter(r => r.has_coords);
-  withCoords.forEach(row => {
-    const m = L.marker([row.lat, row.lng], { icon: markerIcon(row) }).addTo(group);
-    m.bindPopup(puHtml(row), { maxWidth: 300 });
-    m.row = row;
-    markers.push(m);
-  });
-  $("mapCnt").textContent = withCoords.length;
-  $("mapCntM").textContent = withCoords.length;
+clearMk();
+const withCoords = rows.filter(r => r.has_coords);
+withCoords.forEach(row => {
+const m = L.marker([row.lat, row.lng], { icon: markerIcon(row) }).addTo(group);
+m.bindPopup(puHtml(row), { maxWidth: 300 });
+m.row = row;
+markers.push(m);
+});
+$(“mapCnt”).textContent = withCoords.length;
+$(“mapCntM”).textContent = withCoords.length;
 }
 
 function render() {
-  const rows = filterRows();
-  renderMarkers(rows);
+const rows = filterRows();
+renderMarkers(rows);
 
-  // sidebar
-  const list = $("list"); list.innerHTML = "";
-  if (!rows.length) {
-    list.innerHTML = `<div class="empty"><div class="empty-ico">🔍</div><div>لا توجد نتائج</div></div>`;
-  } else {
-    rows.forEach((row, i) => {
-      const div = document.createElement("div");
-      div.className = `card ${nc(row.nationality)}`;
-      div.style.animationDelay = `${Math.min(i*18,280)}ms`;
-      div.innerHTML = cardHtml(row);
-      bindAct(div, row);
-      div.addEventListener("click", e => {
-        if (e.target.closest("a,button")) return;
-        if (row.has_coords) { map.setView([row.lat,row.lng],17); const mk=markers.find(m=>m.row===row); if(mk)mk.openPopup(); $("map").scrollIntoView({behavior:"smooth",block:"start"}); }
-        else if (row.link) window.open(row.link,"_blank");
-      });
-      list.appendChild(div);
-    });
-  }
+// sidebar
+const list = $(“list”); list.innerHTML = “”;
+if (!rows.length) {
+list.innerHTML = `<div class="empty"><div class="empty-ico">🔍</div><div>لا توجد نتائج</div></div>`;
+} else {
+rows.forEach((row, i) => {
+const div = document.createElement(“div”);
+div.className = `card ${nc(row.nationality)}`;
+div.style.animationDelay = `${Math.min(i*18,280)}ms`;
+div.innerHTML = cardHtml(row);
+bindAct(div, row);
+div.addEventListener(“click”, e => {
+if (e.target.closest(“a,button”)) return;
+if (row.has_coords) { map.setView([row.lat,row.lng],17); const mk=markers.find(m=>m.row===row); if(mk)mk.openPopup(); $(“map”).scrollIntoView({behavior:“smooth”,block:“start”}); }
+else if (row.link) window.open(row.link,”_blank”);
+});
+list.appendChild(div);
+});
+}
 
-  // mobile grid
-  const mg = $("mobGrid"); mg.innerHTML = "";
-  rows.forEach(row => {
-    const d = (userLat && userLng && row.has_coords) ? fmtDist(userLat,userLng,row.lat,row.lng) : "";
-    const div = document.createElement("div");
-    div.className = `mini-card ${nc(row.nationality)}`;
-    div.innerHTML = `
-      <div class="mini-id">${esc(row.permit || row.name)}</div>
-      <div class="mini-nat">${esc(row.nationality)}${row.area ? ` • ${esc(row.area)}` : ""}</div>
-      ${d ? `<div style="font-size:10px;color:var(--text2);margin-bottom:6px;font-weight:700">📏 ${esc(d)}</div>` : ""}
-      <div class="mini-actions">
-        <button class="mini-btn" data-copy="info">نسخ</button>
-        ${row.link ? `<button class="mini-btn" data-copy="loc">موقع</button>` : ""}
-        <button class="mini-btn" data-edit="1">تحديث</button>
-      </div>`;
-    div.querySelector("[data-copy='info']")?.addEventListener("click", e => { e.stopPropagation(); cpTxt(rowInfo(row), e.currentTarget); });
-    div.querySelector("[data-copy='loc']")?.addEventListener("click", e => { e.stopPropagation(); cpTxt(row.link, e.currentTarget); });
-    div.querySelector("[data-edit='1']")?.addEventListener("click", e => { e.stopPropagation(); startEdit(row); });
-    div.addEventListener("click", e => {
-      if (e.target.closest("button")) return;
-      if (row.has_coords) { map.setView([row.lat,row.lng],17); const mk=markers.find(m=>m.row===row); if(mk)mk.openPopup(); $("map").scrollIntoView({behavior:"smooth",block:"start"}); }
-      else if (row.link) window.open(row.link,"_blank");
-    });
-    mg.appendChild(div);
-  });
+// mobile grid
+const mg = $(“mobGrid”); mg.innerHTML = “”;
+rows.forEach(row => {
+const d = (userLat && userLng && row.has_coords) ? fmtDist(userLat,userLng,row.lat,row.lng) : “”;
+const div = document.createElement(“div”);
+div.className = `mini-card ${nc(row.nationality)}`;
+div.innerHTML = `<div class="mini-id">${esc(row.permit || row.name)}</div> <div class="mini-nat">${esc(row.nationality)}${row.area ?` • ${esc(row.area)}`: ""}</div> ${d ?`<div style="font-size:10px;color:var(--text2);margin-bottom:6px;font-weight:700">📏 ${esc(d)}</div>`: ""} <div class="mini-actions"> <button class="mini-btn" data-copy="info">نسخ</button> ${row.link ?`<button class="mini-btn" data-copy="loc">موقع</button>` : ""} <button class="mini-btn" data-edit="1">تحديث</button> </div>`;
+div.querySelector(”[data-copy=‘info’]”)?.addEventListener(“click”, e => { e.stopPropagation(); cpTxt(rowInfo(row), e.currentTarget); });
+div.querySelector(”[data-copy=‘loc’]”)?.addEventListener(“click”, e => { e.stopPropagation(); cpTxt(row.link, e.currentTarget); });
+div.querySelector(”[data-edit=‘1’]”)?.addEventListener(“click”, e => { e.stopPropagation(); startEdit(row); });
+div.addEventListener(“click”, e => {
+if (e.target.closest(“button”)) return;
+if (row.has_coords) { map.setView([row.lat,row.lng],17); const mk=markers.find(m=>m.row===row); if(mk)mk.openPopup(); $(“map”).scrollIntoView({behavior:“smooth”,block:“start”}); }
+else if (row.link) window.open(row.link,”_blank”);
+});
+mg.appendChild(div);
+});
 
-  $("cnt").textContent = rows.length;
-  $("cntM").textContent = rows.length;
+$(“cnt”).textContent = rows.length;
+$(“cntM”).textContent = rows.length;
 }
 
 function setFilter(val) {
-  currentFilter = val;
-  document.querySelectorAll("[data-filter],[data-filter-map],[data-filter-mob]").forEach(b => {
-    const v = b.dataset.filter || b.dataset.filterMap || b.dataset.filterMob;
-    b.classList.toggle("active", v === val);
-  });
-  render();
+currentFilter = val;
+document.querySelectorAll(”[data-filter],[data-filter-map],[data-filter-mob]”).forEach(b => {
+const v = b.dataset.filter || b.dataset.filterMap || b.dataset.filterMob;
+b.classList.toggle(“active”, v === val);
+});
+render();
 }
 
 function setLabel(mode) {
-  labelMode = mode;
-  const isName = mode === "name";
-  ["showName","mShowName","mShowNameMob"].forEach(id => $(id)?.classList.toggle("active", isName));
-  ["showPermit","mShowPermit","mShowPermitMob"].forEach(id => $(id)?.classList.toggle("active", !isName));
-  markers.forEach(m => m.setIcon(markerIcon(m.row)));
+labelMode = mode;
+const isName = mode === “name”;
+[“showName”,“mShowName”,“mShowNameMob”].forEach(id => $(id)?.classList.toggle(“active”, isName));
+[“showPermit”,“mShowPermit”,“mShowPermitMob”].forEach(id => $(id)?.classList.toggle(“active”, !isName));
+markers.forEach(m => m.setIcon(markerIcon(m.row)));
 }
 
 /* ══ LOCATION ══ */
 function setBanner(state, msg) {
-  const b = $("locBanner"), tx = $("locTxt"), btn = $("locBtn");
-  if (!b) return;
-  b.className = "loc-banner" + (state==="ok"?" ok":state==="denied"?" denied":"");
-  if (tx) tx.textContent = msg;
-  if (btn) btn.textContent = state==="ok" ? "تحديث" : "إعادة المحاولة";
+const b = $(“locBanner”), tx = $(“locTxt”), btn = $(“locBtn”);
+if (!b) return;
+b.className = “loc-banner” + (state===“ok”?” ok”:state===“denied”?” denied”:””);
+if (tx) tx.textContent = msg;
+if (btn) btn.textContent = state===“ok” ? “تحديث” : “إعادة المحاولة”;
 }
 
 function mkLocIcon() {
-  const bg = "#fff";
-  return L.divIcon({
-    className: "",
-    html: `<div style="position:relative;width:22px;height:22px">
-      <div style="position:absolute;top:50%;left:50%;width:13px;height:13px;background:#3b82f6;border:2.5px solid ${bg};border-radius:50%;z-index:2;box-shadow:0 0 12px rgba(59,130,246,.9);transform:translate(-50%,-50%)"></div>
-      <div style="position:absolute;top:50%;left:50%;width:13px;height:13px;background:rgba(59,130,246,.35);border-radius:50%;animation:locPulse 2s ease-out infinite;transform:translate(-50%,-50%)"></div>
-    </div>`,
-    iconSize: [22,22], iconAnchor: [11,11], popupAnchor: [0,-13]
-  });
+const bg = “#fff”;
+return L.divIcon({
+className: “”,
+html: `<div style="position:relative;width:22px;height:22px"> <div style="position:absolute;top:50%;left:50%;width:13px;height:13px;background:#3b82f6;border:2.5px solid ${bg};border-radius:50%;z-index:2;box-shadow:0 0 12px rgba(59,130,246,.9);transform:translate(-50%,-50%)"></div> <div style="position:absolute;top:50%;left:50%;width:13px;height:13px;background:rgba(59,130,246,.35);border-radius:50%;animation:locPulse 2s ease-out infinite;transform:translate(-50%,-50%)"></div> </div>`,
+iconSize: [22,22], iconAnchor: [11,11], popupAnchor: [0,-13]
+});
 }
 
 function updateLoc(lat, lng, center=false) {
-  userLat = lat; userLng = lng;
-  if (!userMarker) userMarker = L.marker([lat,lng],{icon:mkLocIcon(),zIndexOffset:9999}).addTo(map).bindPopup("📍 موقعك الحالي");
-  else { userMarker.setLatLng([lat,lng]); userMarker.setIcon(mkLocIcon()); }
-  if (center) { map.setView([lat,lng],15); userMarker.openPopup(); }
-  setBanner("ok","✓ تم تحديد موقعك — المسافات تظهر الآن");
-  $("sdot").className = "sdot ok";
-  render();
+userLat = lat; userLng = lng;
+if (!userMarker) userMarker = L.marker([lat,lng],{icon:mkLocIcon(),zIndexOffset:9999}).addTo(map).bindPopup(“📍 موقعك الحالي”);
+else { userMarker.setLatLng([lat,lng]); userMarker.setIcon(mkLocIcon()); }
+if (center) { map.setView([lat,lng],15); userMarker.openPopup(); }
+setBanner(“ok”,“✓ تم تحديد موقعك — المسافات تظهر الآن”);
+$(“sdot”).className = “sdot ok”;
+render();
 }
 
 function startLoc(forceCenter=false) {
-  if (!navigator.geolocation) { setBanner("denied","المتصفح لا يدعم تحديد الموقع."); return; }
-  if (watchId !== null) { navigator.geolocation.clearWatch(watchId); watchId = null; }
-  setBanner("","⏳ جارِ تحديد موقعك...");
-  let centered = !forceCenter;
-  const ok = pos => { const c=!centered; centered=true; updateLoc(pos.coords.latitude,pos.coords.longitude,c); };
-  const err = e => { const m={1:"🚫 رُفض الإذن — افتح الإعدادات وأعطِ صلاحية الموقع",2:"⚠️ تعذر تحديد موقعك — تأكد من GPS",3:"⏱ انتهت المهلة — اضغط إعادة المحاولة"}; setBanner("denied",m[e.code]||"خطأ."); };
-  navigator.geolocation.getCurrentPosition(ok, err, {enableHighAccuracy:true,timeout:15000,maximumAge:0});
-  watchId = navigator.geolocation.watchPosition(ok, ()=>{}, {enableHighAccuracy:true,maximumAge:5000,timeout:20000});
+if (!navigator.geolocation) { setBanner(“denied”,“المتصفح لا يدعم تحديد الموقع.”); return; }
+if (watchId !== null) { navigator.geolocation.clearWatch(watchId); watchId = null; }
+setBanner(””,“⏳ جارِ تحديد موقعك…”);
+let centered = !forceCenter;
+const ok = pos => { const c=!centered; centered=true; updateLoc(pos.coords.latitude,pos.coords.longitude,c); };
+const err = e => { const m={1:“🚫 رُفض الإذن — افتح الإعدادات وأعطِ صلاحية الموقع”,2:“⚠️ تعذر تحديد موقعك — تأكد من GPS”,3:“⏱ انتهت المهلة — اضغط إعادة المحاولة”}; setBanner(“denied”,m[e.code]||“خطأ.”); };
+navigator.geolocation.getCurrentPosition(ok, err, {enableHighAccuracy:true,timeout:15000,maximumAge:0});
+watchId = navigator.geolocation.watchPosition(ok, ()=>{}, {enableHighAccuracy:true,maximumAge:5000,timeout:20000});
 }
 
 /* ══ EDIT ══ */
 function startEdit(row) {
-  const pwd = prompt("أدخل كلمة السر");
-  if (!pwd) return;
-  selectedRow = row; editPassword = pwd;
-  alert("الآن اضغط المكان الصحيح في الخريطة");
+const pwd = prompt(“أدخل كلمة السر”);
+if (!pwd) return;
+selectedRow = row; editPassword = pwd;
+alert(“الآن اضغط المكان الصحيح في الخريطة”);
 }
 function startEditByRow(rn) { const row = allRows.find(r => Number(r._rowNumber) === Number(rn)); if (row) startEdit(row); }
 window.startEditByRow = startEditByRow;
 
-map.on("click", async e => {
-  if (!selectedRow) return;
-  const lat = e.latlng.lat, lng = e.latlng.lng;
-  try {
-    const res = await fetch(API, { method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({action:"updateLocation",rowNumber:selectedRow._rowNumber,lat,lng,password:editPassword}) });
-    const result = await res.json();
-    if (!result.ok) { alert("فشل التحديث: "+(result.error||"خطأ")); selectedRow=null; editPassword=""; return; }
-    selectedRow.lat=lat; selectedRow.lng=lng; selectedRow.has_coords=true; selectedRow.link=`https://www.google.com/maps?q=${lat},${lng}`;
-    selectedRow=null; editPassword=""; render(); alert("✅ تم تحديث الموقع بنجاح");
-  } catch(err) { alert("تعذر حفظ التحديث"); selectedRow=null; editPassword=""; }
+map.on(“click”, async e => {
+if (!selectedRow) return;
+const lat = e.latlng.lat, lng = e.latlng.lng;
+try {
+const res = await fetch(API, { method:“POST”, headers:{“Content-Type”:“application/json”}, body: JSON.stringify({action:“updateLocation”,rowNumber:selectedRow._rowNumber,lat,lng,password:editPassword}) });
+const result = await res.json();
+if (!result.ok) { alert(“فشل التحديث: “+(result.error||“خطأ”)); selectedRow=null; editPassword=””; return; }
+selectedRow.lat=lat; selectedRow.lng=lng; selectedRow.has_coords=true; selectedRow.link=`https://www.google.com/maps?q=${lat},${lng}`;
+selectedRow=null; editPassword=””; render(); alert(“✅ تم تحديث الموقع بنجاح”);
+} catch(err) { alert(“تعذر حفظ التحديث”); selectedRow=null; editPassword=””; }
 });
 
 /* ══ LOAD ══ */
 async function loadData() {
-  $("sdot").className = "sdot"; $("stxt").textContent = "جارِ تحميل البيانات...";
-  try {
-    const res = await fetch(API + "?action=list");
-    const json = await res.json();
-    allRows = json.map(buildRow);
-    render();
-    const withCoords = allRows.filter(r => r.has_coords);
-    if (withCoords.length) map.fitBounds(L.latLngBounds(withCoords.map(r=>[r.lat,r.lng])).pad(.15));
-    $("sdot").className = "sdot ok";
-    $("stxt").textContent = `${allRows.length} سجل — ${withCoords.length} بإحداثيات`;
-  } catch(e) {
-    $("sdot").className = "sdot err"; $("stxt").textContent = "تعذر تحميل البيانات";
-    $("list").innerHTML = `<div class="empty"><div class="empty-ico">⚠️</div><div>تعذر تحميل البيانات</div></div>`;
-  }
+$(“sdot”).className = “sdot”; $(“stxt”).textContent = “جارِ تحميل البيانات…”;
+try {
+const res = await fetch(API + “?action=list”);
+const json = await res.json();
+allRows = json.map(buildRow);
+render();
+const withCoords = allRows.filter(r => r.has_coords);
+if (withCoords.length) map.fitBounds(L.latLngBounds(withCoords.map(r=>[r.lat,r.lng])).pad(.15));
+$(“sdot”).className = “sdot ok”;
+$(“stxt”).textContent = `${allRows.length} سجل — ${withCoords.length} بإحداثيات`;
+} catch(e) {
+$(“sdot”).className = “sdot err”; $(“stxt”).textContent = “تعذر تحميل البيانات”;
+$(“list”).innerHTML = `<div class="empty"><div class="empty-ico">⚠️</div><div>تعذر تحميل البيانات</div></div>`;
+}
 }
 
 /* ══ EVENTS ══ */
-document.querySelectorAll("[data-filter],[data-filter-map],[data-filter-mob]").forEach(b =>
-  b.addEventListener("click", () => { const v = b.dataset.filter||b.dataset.filterMap||b.dataset.filterMob; setFilter(v); })
+document.querySelectorAll(”[data-filter],[data-filter-map],[data-filter-mob]”).forEach(b =>
+b.addEventListener(“click”, () => { const v = b.dataset.filter||b.dataset.filterMap||b.dataset.filterMob; setFilter(v); })
 );
-$("showName").onclick = $("mShowName").onclick = $("mShowNameMob").onclick = () => setLabel("name");
-$("showPermit").onclick = $("mShowPermit").onclick = $("mShowPermitMob").onclick = () => setLabel("permit");
-$("fitBtn").onclick = () => { const r=filterRows(); const pts=r.filter(x=>x.has_coords); if(pts.length) map.fitBounds(L.latLngBounds(pts.map(x=>[x.lat,x.lng])).pad(.15)); };
-$("locateBtn").onclick = () => startLoc(true);
-$("locBtn").onclick = () => startLoc(true);
-$("search").addEventListener("input", () => { $("searchM").value=$("search").value; render(); });
-$("searchM").addEventListener("input", () => { $("search").value=$("searchM").value; render(); });
+$(“showName”).onclick = $(“mShowName”).onclick = $(“mShowNameMob”).onclick = () => setLabel(“name”);
+$(“showPermit”).onclick = $(“mShowPermit”).onclick = $(“mShowPermitMob”).onclick = () => setLabel(“permit”);
+$(“fitBtn”).onclick = () => { const r=filterRows(); const pts=r.filter(x=>x.has_coords); if(pts.length) map.fitBounds(L.latLngBounds(pts.map(x=>[x.lat,x.lng])).pad(.15)); };
+$(“locateBtn”).onclick = () => startLoc(true);
+$(“locBtn”).onclick = () => startLoc(true);
+$(“search”).addEventListener(“input”, () => { $(“searchM”).value=$(“search”).value; render(); });
+$(“searchM”).addEventListener(“input”, () => { $(“search”).value=$(“searchM”).value; render(); });
 
-window.addEventListener("load", () => { loadData(); startLoc(true); });
+window.addEventListener(“load”, () => { loadData(); startLoc(true); });
 </script>
 
 </body>
